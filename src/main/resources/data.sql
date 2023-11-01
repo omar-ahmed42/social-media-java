@@ -1,0 +1,13 @@
+INSERT INTO role (id, name)
+SELECT * FROM (SELECT 1, 'USER') AS tmp
+WHERE NOT EXISTS (
+    SELECT name FROM role WHERE id = 1
+) LIMIT 1;
+
+INSERT INTO role (id, name)
+SELECT * FROM (SELECT 2, 'ADMIN') AS tmp
+WHERE NOT EXISTS (
+    SELECT name FROM role WHERE id = 2
+) LIMIT 1;
+
+ALTER TABLE role AUTO_INCREMENT = 2;
