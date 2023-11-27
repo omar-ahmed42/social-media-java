@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -20,7 +21,9 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -59,11 +62,14 @@ class AuthenticationServiceImplTest {
 
     @Value("${test.secret.email0}")
     private String testEmail0;
-    
+
     @Value("${test.secret.email1}")
     private String testEmail1;
-    
+
     private User testUser;
+
+    @MockBean
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @BeforeAll
     public void setup() {
@@ -96,6 +102,7 @@ class AuthenticationServiceImplTest {
 
         verify(passwordEncoder).encode(any());
         verify(userRepository).save(any(User.class));
+        verify(kafkaTemplate).send(anyString(), anyString(), anyLong());
 
         assertEquals(Roles.USER.toString(), roleRepository.findById(1).get().getName());
         assertNotNull(response);

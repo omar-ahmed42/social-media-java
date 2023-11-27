@@ -2,7 +2,9 @@ package com.omarahmed42.socialmedia.service.impl;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.UUID;
 
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -38,6 +40,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    private static final int MINIMUM_AGE = 16;
 
     @Override
     @Transactional(readOnly = true)
@@ -54,17 +59,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public Long signUp(SignupRequest request) {
         User user = userMapper.toEntity(request);
 
-        if (!isValidAge(request.getDateOfBirth()))
-            throw new UnderAgeException("User must be atleast " + getMinimumAge() + " years old");
+        throwIfInvalidAge(request.getDateOfBirth());
+        throwIfEmailExists(request.getEmail());
 
-        if (userRepository.existsByEmail(request.getEmail()))
-            throw new EmailAlreadyExistsException();
-        String hashedPassword = passwordEncoder.encode(user.getPassword());
-        user.setPassword(hashedPassword);
+        hashAndSetPassword(user, user.getPassword());
 
         user.getRoles().add(roleRepository.getReferenceById(Roles.USER.getValue()));
         user = userRepository.save(user);
+
+        kafkaTemplate.send("graph-user-creation", UUID.randomUUID().toString(), user.getId());
         return user.getId();
+    }
+
+    private void throwIfInvalidAge(LocalDate dateOfBirth) {
+        if (!isValidAge(dateOfBirth))
+            throw new UnderAgeException("User must be atleast " + getMinimumAge() + " years old");
     }
 
     private boolean isValidAge(LocalDate dateOfBirth) {
@@ -73,7 +82,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     private int getMinimumAge() {
-        return 16;
+        return MINIMUM_AGE;
     }
 
+    private void throwIfEmailExists(String email) {
+        if (userRepository.existsByEmail(email))
+            throw new EmailAlreadyExistsException();
+    }
+
+    private void hashAndSetPassword(User user, String plainPassword) {
+        String hashedPassword = passwordEncoder.encode(plainPassword);
+        user.setPassword(hashedPassword);
+    }
 }
