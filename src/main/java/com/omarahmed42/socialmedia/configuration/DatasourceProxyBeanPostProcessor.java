@@ -2,6 +2,7 @@ package com.omarahmed42.socialmedia.configuration;
 
 import java.lang.reflect.Method;
 
+import javax.annotation.Nonnull;
 import javax.sql.DataSource;
 
 import org.aopalliance.intercept.MethodInterceptor;
@@ -12,7 +13,6 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
-import jakarta.annotation.Nonnull;
 import net.ttddyy.dsproxy.listener.logging.SLF4JLogLevel;
 import net.ttddyy.dsproxy.support.ProxyDataSource;
 import net.ttddyy.dsproxy.support.ProxyDataSourceBuilder;
