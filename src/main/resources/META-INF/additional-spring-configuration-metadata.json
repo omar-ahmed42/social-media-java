@@ -1,0 +1,27 @@
+{"properties": [
+  {
+    "name": "token.signing.key",
+    "type": "java.lang.String",
+    "description": "The secret key used for signing JWTs"
+  },
+  {
+    "name": "test.secret.email0",
+    "type": "java.lang.String",
+    "description": "Email 0 to be used for testing"
+  },
+  {
+    "name": "test.secret.email1",
+    "type": "java.lang.String",
+    "description": "Email 1 to be used for testing"
+  },
+  {
+    "name": "storage.path",
+    "type": "java.lang.String",
+    "description": "The path where attachments will be stored"
+  },
+  {
+    "name": "storage.messages.path",
+    "type": "java.lang.String",
+    "description": "The path where message attachments will be stored"
+  }
+]}
