@@ -1,0 +1,162 @@
+scalar Date
+scalar DateTime
+scalar Long
+scalar PositiveInt
+scalar NonNegativeInt
+
+type User {
+  id: ID
+  firstName: String
+  lastName: String
+  email: String
+  dateOfBirth: Date
+  createdAt: DateTime
+  roles: [Role]
+  posts: [Post]
+}
+
+type Role {
+  id: ID
+  name: String
+}
+
+type Post {
+  id: ID
+  content: String
+  postAttachments: [PostAttachment]
+  comments: [Comment]
+  createdAt: DateTime
+  user: User
+  reactionStatistics: ReactionStatistics
+}
+
+type Comment {
+  id: ID!
+  content: String
+  commentAttachments: [CommentAttachment]
+  post: Post
+  createdAt: DateTime
+  user: User
+  reactionStatistics: ReactionStatistics
+}
+
+type ReactionStatistics {
+  likeCount: Long
+  loveCount: Long
+  angryCount: Long
+  sadCount: Long
+  laughCount: Long
+}
+
+type FriendRequest {
+  id: ID
+  sender: User
+  receiver: User
+}
+
+type PostAttachment {
+  id: ID
+  url: String
+  post: Post
+}
+
+type CommentAttachment {
+  id: ID
+  url: String
+  comment: Comment
+}
+
+type Conversation {
+  id: ID
+  name: String
+  messages: [Message]
+  users: [User]
+  createdAt: DateTime
+}
+
+type Message {
+  id: ID
+  content: String
+  user: User
+  conversation: Conversation
+  createdAt: DateTime
+  attachment: MessageAttachment
+}
+
+type MessageAttachment {
+  id: ID
+  url: String
+  message: Message
+}
+
+input SavePostInput {
+  id: ID
+  content: String
+  postStatus: String
+}
+
+input SaveCommentInput {
+  id: ID
+  postId: ID
+  content: String
+  commentStatus: String
+}
+
+# Queries
+type Query {
+  findPost(id: ID!): Post
+  findComment(id: ID!): Comment
+  findFriends(page: PositiveInt = 1, pageSize: PositiveInt = 15): [User]
+  fetchNewsfeed(id: ID): [Post]
+  findFriendRequests(
+    isSender: Boolean = false
+    page: PositiveInt = 1
+    pageSize: PositiveInt = 15
+    after: Long
+    before: Long
+  ): [FriendRequest]
+  findAllBlockedUsers: [User]
+  findMessages(conversationId: ID!, after: ID, before: ID): [Message]
+}
+
+# Mutations
+type Mutation {
+  addUser(
+    firstName: String!
+    lastName: String!
+    email: String!
+    password: String!
+    dateOfBirth: Date!
+    roles: [String]!
+  ): User
+  deleteUser(id: ID!): Boolean
+  blockUser(userToBeBlockedId: ID!): Boolean
+  unblockUser(userToBeUnBlockedId: ID!): Boolean
+
+  savePost(postInput: SavePostInput): Post
+  deletePost(id: ID!): Int
+
+  saveComment(commentInput: SaveCommentInput): Comment
+  deleteComment(id: ID!): Boolean
+
+  sendFriendRequest(receiverId: ID!): FriendRequest
+  cancelFriendRequest(id: ID!): Boolean
+  acceptFriendRequest(id: ID!): Boolean
+  rejectFriendRequest(id: ID!): Boolean
+  unfriend(friendId: ID): Boolean
+
+  savePostReaction(reactionId: ID!, postId: ID!): Boolean
+  saveCommentReaction(reactionId: ID!, commentId: ID!): Boolean
+
+  createConversationWithMembers(
+    name: String
+    isGroup: Boolean!
+    membersIds: [ID]!
+  ): Conversation
+}
+
+type Subscription {
+  messageSent(conversationId: ID!): Message
+  messageReceived: Message
+  messageReceived2: Message
+}
