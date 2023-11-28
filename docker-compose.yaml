@@ -1,0 +1,99 @@
+version: '2'
+services:
+  cassandra:
+    container_name: cassandra
+    image: 'cassandra_social_media:latest'
+    build:
+      context: .
+      dockerfile: cassandra.Dockerfile
+    environment:
+      - CASSANDRA_DC=$CASSANDRA_DC
+      - CASSANDRA_ENDPOINT_SNITCH=$CASSANDRA_ENDPOINT_SNITCH
+      - CASSANDRA_CLUSTER_NAME=$CASSANDRA_CLUSTER_NAME
+      - CASSANDRA_KEYSPACE=${CASSANDRA_KEYSPACE}
+    volumes:
+      -  ${DOCKER_HOST_CASSANDRA_VOLUMES_DATA}:/var/lib/cassandra
+    ports:
+      - '$CASSANDRA_PORT'
+    networks:
+      - social-media-network
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 30s
+      retries: 15
+      start_period: 60s
+
+  neo4j:
+    container_name: neo4j
+    image: 'neo4j:latest'
+    volumes:
+      - ${DOCKER_HOST_NEO4J_VOLUMES_DATA}:/data
+    environment:
+      - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
+    ports:
+      - '$DOCKER_HOST_NEO4J_BOLT_PORT:$DOCKER_CONTAINER_NEO4J_BOLT_PORT'
+      - '$DOCKER_HOST_NEO4J_HTTP_PORT:$DOCKER_CONTAINER_NEO4J_HTTP_PORT'
+    networks:
+      - social-media-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:${DOCKER_CONTAINER_NEO4J_HTTP_PORT} || exit 1"]
+
+  social_media:
+    container_name: social_media
+    build:
+      dockerfile: Dockerfile.spring-boot
+    image: social_media:latest
+    ports:
+      - "$DOCKER_HOST_SOCIAL_MEDIA_PORT:$DOCKER_CONTAINER_SOCIAL_MEDIA_PORT"
+    env_file:
+      - social_media.env
+    networks:
+      - social-media-network
+    restart: on-failure
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy
+
+  mysql:
+    container_name: mysql
+    image: 'mysql:latest'
+    environment:
+      - MYSQL_DATABASE=$MYSQL_DATABASE
+      - MYSQL_USER=$MYSQL_USER
+      - MYSQL_PASSWORD=$MYSQL_PASSWORD
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+    ports:
+      - '$DOCKER_HOST_MYSQL_PORT:$DOCKER_CONTAINER_MYSQL_PORT'
+    networks:
+      - social-media-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${DOCKER_CONTAINER_MYSQL_PORT}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 160s
+
+  redis:
+    container_name: redis
+    image: 'redis:latest'
+    ports:
+      - '$REDIS_PORT'
+    networks:
+      - social-media-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+
+networks:
+  social-media-network:
+    driver: bridge
