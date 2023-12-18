@@ -1,5 +1,41 @@
 version: '2'
 services:
+  uid-generator:
+    container_name: uid-generator
+    build: https://github.com/omar-ahmed42/distributed-uid-snowflake.git#grpc
+    ports:
+      - '$UID_GENERATOR_PORT:$UID_GENERATOR_PORT'
+    env_file:
+      - uid-generator.env
+    networks:
+      - social-media-network
+
+  zookeeper:
+    container_name: zookeeper
+    image: docker.io/bitnami/zookeeper:3.9
+    ports:
+      - "$ZOOKEEPER_HOST_PORT:$ZOOKEEPER_CONTAINER_PORT"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    volumes:
+      - ${ZOOKEEPER_HOST_VOLUME}:/zookeeper
+    networks:
+      - social-media-network
+
+  kafka:
+    container_name: kafka
+    image: docker.io/bitnami/kafka:3.4
+    ports:
+      - '$KAFKA_HOST_PORT:$KAFKA_CONTAINER_PORT'
+    env_file:
+      - kafka.env
+    volumes:
+    - ${KAFKA_HOST_VOLUME}:/kafka-logs
+    networks:
+      - social-media-network
+    depends_on:
+      - zookeeper
+    
   cassandra:
     container_name: cassandra
     image: 'cassandra_social_media:latest'
@@ -52,6 +88,8 @@ services:
       - social-media-network
     restart: on-failure
     depends_on:
+      uid-generator:
+        condition: service_started
       mysql:
         condition: service_healthy
       redis:
