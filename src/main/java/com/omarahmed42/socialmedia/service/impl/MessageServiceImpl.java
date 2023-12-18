@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.reactivestreams.Publisher;
@@ -41,6 +40,7 @@ import com.omarahmed42.socialmedia.repository.ConversationRepository;
 import com.omarahmed42.socialmedia.repository.MessageRepository;
 import com.omarahmed42.socialmedia.service.ConversationService;
 import com.omarahmed42.socialmedia.service.FileService;
+import com.omarahmed42.socialmedia.service.IdGeneratorService;
 import com.omarahmed42.socialmedia.service.MessageService;
 import com.omarahmed42.socialmedia.util.SecurityUtils;
 
@@ -55,6 +55,7 @@ public class MessageServiceImpl implements MessageService {
     private final FileService fileService;
     private final ConversationRepository conversationRepository;
     private final ConversationService conversationService;
+    private final IdGeneratorService<Long> idGeneratorService;
     private static final String EXTENSION_SEPARATOR = ".";
 
     private final MessageRepository messageRepository;
@@ -70,7 +71,7 @@ public class MessageServiceImpl implements MessageService {
 
     public MessageServiceImpl(ConversationRepository conversationRepository, ConversationService conversationService,
             MessageRepository messageRepository, KafkaTemplate<String, Object> kafkaTemplate,
-            MessageMapper messageMapper, FileService fileService) {
+            MessageMapper messageMapper, FileService fileService, IdGeneratorService<Long> idGeneratorService) {
         this.conversationRepository = conversationRepository;
         this.conversationService = conversationService;
         this.messageRepository = messageRepository;
@@ -78,6 +79,7 @@ public class MessageServiceImpl implements MessageService {
         this.sink = Sinks.many().multicast().onBackpressureBuffer();
         this.messageMapper = messageMapper;
         this.fileService = fileService;
+        this.idGeneratorService = idGeneratorService;
     }
 
     @Override
@@ -168,8 +170,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private Long generateId() {
-        // Will be replaced with an API call to get a distributed UID
-        return RandomUtils.nextLong(1L, Long.MAX_VALUE);
+        return idGeneratorService.generateId();
     }
 
     private String storeFile(MultipartFile multipartFile, Long conversationId) {
@@ -282,10 +283,12 @@ public class MessageServiceImpl implements MessageService {
         Pageable pageable;
         if (after != null) {
             pageable = PageRequest.of(0, 15, Sort.by(Direction.ASC, "id.messageId"));
-            messages = messageRepository.findAllByIdConversationIdAndIdMessageIdGreaterThan(conversationId, after, pageable);
+            messages = messageRepository.findAllByIdConversationIdAndIdMessageIdGreaterThan(conversationId, after,
+                    pageable);
         } else if (before != null) {
             pageable = PageRequest.of(0, 15, Sort.by(Direction.DESC, "id.messageId"));
-            messages = messageRepository.findAllByIdConversationIdAndIdMessageIdLessThan(conversationId, before, pageable);
+            messages = messageRepository.findAllByIdConversationIdAndIdMessageIdLessThan(conversationId, before,
+                    pageable);
         } else {
             pageable = PageRequest.of(0, 15, Sort.by(Direction.DESC, "id.messageId"));
             messages = messageRepository.findAllByIdConversationId(conversationId, pageable);

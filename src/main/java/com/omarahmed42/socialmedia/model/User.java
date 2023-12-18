@@ -4,10 +4,13 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.hibernate.annotations.GenericGenerator;
+
+import com.omarahmed42.socialmedia.generator.SnowflakeUIDGenerator;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
@@ -24,7 +27,8 @@ import lombok.Setter;
 @Getter
 public class User extends Auditable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GenericGenerator(name = "snowflake_id_generator", type = SnowflakeUIDGenerator.class)
+    @GeneratedValue(generator = "snowflake_id_generator")
     private Long id;
 
     @Column(name = "first_name", length = 50, nullable = false)

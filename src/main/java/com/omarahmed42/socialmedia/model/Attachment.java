@@ -1,7 +1,10 @@
 package com.omarahmed42.socialmedia.model;
 
+import org.hibernate.annotations.GenericGenerator;
+
 import com.omarahmed42.socialmedia.enums.AttachmentStatus;
 import com.omarahmed42.socialmedia.enums.AttachmentType;
+import com.omarahmed42.socialmedia.generator.SnowflakeUIDGenerator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,13 +18,14 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Data
-@EqualsAndHashCode (callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 @Table
 @Entity
 @NoArgsConstructor
 public class Attachment extends Auditable {
     @Id
-    @GeneratedValue
+    @GenericGenerator(name = "snowflake_id_generator", type = SnowflakeUIDGenerator.class)
+    @GeneratedValue(generator = "snowflake_id_generator")
     @Column(name = "id", nullable = false)
     private Long id;
 
