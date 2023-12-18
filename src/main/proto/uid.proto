@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package generator;
+
+import "google/protobuf/wrappers.proto";
+option java_package = "com.omarahmed42.socialmedia.client.grpc";
+
+service UID {
+    rpc generateUid(Empty) returns (google.protobuf.Int64Value);
+}
+
+message Empty {}
