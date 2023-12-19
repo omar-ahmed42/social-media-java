@@ -32,6 +32,8 @@ public class SecurityConfiguration {
         http.csrf(AbstractHttpConfigurer::disable).cors(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
                         request -> request.requestMatchers("/api/v1/auth/**").permitAll()
+                                .requestMatchers("/actuator/**").permitAll()
+                                .requestMatchers("/prometheus/**").permitAll()
                                 .requestMatchers("/graphql").permitAll()
                                 .requestMatchers("/graphql/**").permitAll()
                                 .requestMatchers("/graphiql").permitAll()
