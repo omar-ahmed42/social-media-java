@@ -76,7 +76,7 @@ services:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:${DOCKER_CONTAINER_NEO4J_HTTP_PORT} || exit 1"]
 
   social_media:
-    container_name: social_media
+    container_name: social-media
     build:
       dockerfile: Dockerfile.spring-boot
     image: social_media:latest
@@ -131,7 +131,7 @@ services:
       timeout: 30s
       retries: 5
       start_period: 60s
-
+      
 networks:
   social-media-network:
     driver: bridge
