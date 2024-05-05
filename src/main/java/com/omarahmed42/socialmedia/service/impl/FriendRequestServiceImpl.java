@@ -165,6 +165,9 @@ public class FriendRequestServiceImpl implements FriendRequestService {
             specs = specs.and(FriendRequestSpecification.beforeId(before));
             pageable = PageRequest.of(paginationInfo.getPage() - 1, paginationInfo.getPageSize(),
                     Sort.by(Direction.DESC, FriendRequest_.ID));
+        } else {
+            pageable = PageRequest.of(paginationInfo.getPage() - 1, paginationInfo.getPageSize(),
+                    Sort.by(Direction.DESC, FriendRequest_.ID));
         }
 
         return friendRequestRepository.findAll(specs, pageable);
