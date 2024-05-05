@@ -38,17 +38,21 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, Long> {
     void deleteBlocksRelationshipBetween(Long sourceNodeId, Long targetNodeId);
 
     @Query("""
-            MATCH (user: User {userId: $user_id} <-[:FRIEND_WITH]-> (friend: User))
-            ORDER BY friend.userId
-            SKIP $offset
-            LIMIT $page_size
+        MATCH (user:User {userId: $user_id})<-[:FRIEND_WITH]->(friend:User)
+        WITH friend
+        ORDER BY friend.userId
+        SKIP $offset
+        LIMIT $page_size
+        RETURN friend;
             """)
     List<UserNode> findFriends(@Param("user_id") Long userId, @Param("offset") Integer offset,
             @Param("page_size") Integer limit);
 
     @Query("""
-            MATCH (user: User {userId: $user_id} -[:BLOCKS]-> (blocked: User))
+            MATCH (user: User {userId: $user_id}) -[:BLOCKS]-> (blocked: User)
+            WITH blocked
             ORDER BY blocked.userId
+            RETURN blocked;
             """)
     List<UserNode> findAllBlockedUsersBy(@Param("user_id") Long userId);
 }
