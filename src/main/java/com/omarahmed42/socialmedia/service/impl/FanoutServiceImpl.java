@@ -77,6 +77,13 @@ public class FanoutServiceImpl implements FanoutService {
     }
 
     @Override
+    public List<Post> getNewsfeed() {
+        SecurityUtils.throwIfNotAuthenticated();
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+        return getNewsfeed(authenticatedUserId);
+    }
+
+    @Override
     @Cacheable(cacheNames = NEWSFEED_KEY, key = "#userId")
     public List<Post> getNewsfeed(Long userId) {
         SecurityUtils.throwIfNotAuthenticated();
@@ -115,6 +122,7 @@ public class FanoutServiceImpl implements FanoutService {
             result.addAll(remainingPosts);
         }
 
+        log.info("Result size: {}", result.size());
         return result;
     }
 

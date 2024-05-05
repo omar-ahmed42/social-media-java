@@ -11,6 +11,7 @@ import com.omarahmed42.socialmedia.model.cache.Newsfeed;
 public interface FanoutService {
     void pushToNewsfeed(ConsumerRecord<String, Newsfeed> consumerRecord);
 
+    List<Post> getNewsfeed();
     List<Post> getNewsfeed(Long userId);
 
     Set<Newsfeed> removeFromTargetUserNewsfeed(Long targetUserId, Long sourceUserId);
