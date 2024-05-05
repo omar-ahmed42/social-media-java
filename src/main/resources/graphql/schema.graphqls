@@ -107,7 +107,7 @@ type Query {
   findPost(id: ID!): Post
   findComment(id: ID!): Comment
   findFriends(page: PositiveInt = 1, pageSize: PositiveInt = 15): [User]
-  fetchNewsfeed(id: ID): [Post]
+  fetchNewsfeed: [Post]
   findFriendRequests(
     isSender: Boolean = false
     page: PositiveInt = 1
