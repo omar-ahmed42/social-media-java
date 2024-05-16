@@ -1,6 +1,9 @@
 package com.omarahmed42.socialmedia.service.impl;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.omarahmed42.socialmedia.enums.PostStatus;
@@ -87,8 +90,7 @@ public class PostReactionServiceImpl implements PostReactionService {
 
     private PostReaction createOrUpdatePostReaction(PostReactionId postReactionId, Long postId, Integer reactionId) {
         PostReaction retrievedPostReaction = postReactionRepository.findById(postReactionId).orElse(null);
-        final Integer oldReactionId = retrievedPostReaction == null ? null
-                : retrievedPostReaction.getReaction().getId();
+        final Integer oldReactionId = retrievedPostReaction != null && retrievedPostReaction.getReaction() != null ? retrievedPostReaction.getReaction().getId() : null;
 
         if (retrievedPostReaction != null && (oldReactionId == null && reactionId == null))
             return retrievedPostReaction;
@@ -120,6 +122,23 @@ public class PostReactionServiceImpl implements PostReactionService {
     public PostReaction removePostReaction(Long postId) {
         return savePostReaction(null, postId);
     }
+
+    @Override
+    public Reaction getPostReaction(Long postId) {
+        SecurityUtils.throwIfNotAuthenticated();
+
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+
+        PostReactionId postReactionId = new PostReactionId();
+
+        postReactionId.setPost(postRepository.getReferenceById(postId));
+        postReactionId.setUser(userRepository.getReferenceById(authenticatedUserId));
+        Optional<PostReaction> postReaction = postReactionRepository.findById(postReactionId);
+        
+        return postReaction.isPresent() ? postReaction.get().getReaction() : null;
+    }
+
+    
 
     
 }

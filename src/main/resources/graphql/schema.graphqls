@@ -48,6 +48,11 @@ type ReactionStatistics {
   laughCount: Long
 }
 
+type Reaction {
+  id: ID
+  name: String
+}
+
 type FriendRequest {
   id: ID
   sender: User
@@ -117,6 +122,7 @@ type Query {
   ): [FriendRequest]
   findAllBlockedUsers: [User]
   findMessages(conversationId: ID!, after: ID, before: ID): [Message]
+  getPostReaction(postId: ID!): Reaction
 }
 
 # Mutations
