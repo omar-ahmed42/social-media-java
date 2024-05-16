@@ -94,7 +94,7 @@ public class PostReactionServiceImpl implements PostReactionService {
             return retrievedPostReaction;
 
         PostReaction postReaction = new PostReaction(postReactionId);
-        postReaction.setReaction(reactionRepository.getReferenceById(reactionId));
+        postReaction.setReaction(reactionId == null ? null : reactionRepository.getReferenceById(reactionId));
         postReaction = postReactionRepository.save(postReaction);
         if (oldReactionId != null) {
             Reaction reaction = reactionRepository.findById(oldReactionId).orElseThrow(
@@ -115,4 +115,11 @@ public class PostReactionServiceImpl implements PostReactionService {
         Long postOwnerId = post.getUser().getId();
         return postOwnerId.equals(userId);
     }
+
+    @Override
+    public PostReaction removePostReaction(Long postId) {
+        return savePostReaction(null, postId);
+    }
+
+    
 }

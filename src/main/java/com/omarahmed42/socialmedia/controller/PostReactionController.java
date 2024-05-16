@@ -18,4 +18,9 @@ public class PostReactionController {
     public Boolean savePostReaction(@Argument Integer reactionId, @Argument Long postId) {
         return postReactionService.savePostReaction(reactionId, postId) == null;
     }
+
+    @MutationMapping
+    public Boolean removePostReaction(@Argument Long postId) {
+        return postReactionService.removePostReaction(postId) == null;
+    }
 }

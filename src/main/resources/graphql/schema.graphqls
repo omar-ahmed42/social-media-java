@@ -146,6 +146,7 @@ type Mutation {
   unfriend(friendId: ID): Boolean
 
   savePostReaction(reactionId: ID!, postId: ID!): Boolean
+  removePostReaction(postId: ID!): Boolean
   saveCommentReaction(reactionId: ID!, commentId: ID!): Boolean
 
   createConversationWithMembers(
