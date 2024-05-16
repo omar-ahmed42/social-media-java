@@ -22,7 +22,10 @@ import com.omarahmed42.socialmedia.service.PostReactionService;
 import com.omarahmed42.socialmedia.service.StatisticsService;
 import com.omarahmed42.socialmedia.util.SecurityUtils;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class PostReactionServiceImpl implements PostReactionService {
 
     private final UserRepository userRepository;
@@ -53,6 +56,7 @@ public class PostReactionServiceImpl implements PostReactionService {
     public PostReaction savePostReaction(Integer reactionId, Long postId) {
         SecurityUtils.throwIfNotAuthenticated();
 
+        log.info("Finding post with id {}", postId);
         Post post = postRepository.findById(postId)
                 .orElseThrow(PostNotFoundException::new);
 
@@ -62,10 +66,7 @@ public class PostReactionServiceImpl implements PostReactionService {
             PostReactionId postReactionId = new PostReactionId();
             postReactionId.setUser(userRepository.getReferenceById(authenticatedUserId));
             postReactionId.setPost(post);
-            PostReaction postReaction = new PostReaction(postReactionId);
-            postReaction.setReaction(reactionRepository.getReferenceById(reactionId));
-            postReaction = postReactionRepository.save(postReaction);
-            return postReaction;
+            return createOrUpdatePostReaction(postReactionId, postId, reactionId);
         } else if (!isPublished && isPostOwner(post, authenticatedUserId)) {
             throw new InvalidInputException("Cannot react to a non-published post");
         }
@@ -81,6 +82,10 @@ public class PostReactionServiceImpl implements PostReactionService {
         postReactionId.setUser(userRepository.getReferenceById(authenticatedUserId));
         postReactionId.setPost(post);
 
+        return createOrUpdatePostReaction(postReactionId, postId, reactionId);
+    }
+
+    private PostReaction createOrUpdatePostReaction(PostReactionId postReactionId, Long postId, Integer reactionId) {
         PostReaction retrievedPostReaction = postReactionRepository.findById(postReactionId).orElse(null);
         final Integer oldReactionId = retrievedPostReaction == null ? null
                 : retrievedPostReaction.getReaction().getId();
@@ -102,6 +107,7 @@ public class PostReactionServiceImpl implements PostReactionService {
                     () -> new ReactionNotFoundException("Reaction with id " + reactionId + " not found"));
             statisticsService.increment(postId.toString(), reaction.getName());
         }
+
         return postReaction;
     }
 
