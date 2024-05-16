@@ -21,4 +21,11 @@ public class PostReactionId implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
+
+    @Override
+    public String toString() {
+        return user.getId().toString() + ":" + post.getId().toString();
+    }
+
+    
 }
