@@ -123,6 +123,11 @@ type Query {
   findAllBlockedUsers: [User]
   findMessages(conversationId: ID!, after: ID, before: ID): [Message]
   getPostReaction(postId: ID!): Reaction
+  findPostsByUserId(userId: ID!, page: PositiveInt = 1, pageSize: PositiveInt = 15, lastSeenPostId: ID): [Post]
+  findUserPersonalInfo(userId: ID!): User
+  findUserPublicInfo(userId: ID!): User
+  isFriend(friendId: ID!): Boolean
+  findPendingFriendRequestByFriendId(receiverId: ID): FriendRequest
 }
 
 # Mutations
