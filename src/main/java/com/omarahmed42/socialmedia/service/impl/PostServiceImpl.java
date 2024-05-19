@@ -6,10 +6,14 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.omarahmed42.socialmedia.dto.PaginationInfo;
 import com.omarahmed42.socialmedia.enums.PostStatus;
 import com.omarahmed42.socialmedia.exception.ForbiddenPostAccessException;
 import com.omarahmed42.socialmedia.exception.InvalidInputException;
@@ -249,18 +253,36 @@ public class PostServiceImpl implements PostService {
         Long userId = user.getId();
         if (userId.equals(authenticatedUserId))
             return postRepository.findAllByUser(user);
-
-        final boolean isFriend = friendService.isFriend(authenticatedUserId, userId);
-        if (!isFriend)
+            
+            final boolean isFriend = friendService.isFriend(authenticatedUserId, userId);
+            if (!isFriend)
             throw new ForbiddenPostAccessException("Forbidden: Cannot access posts for user with id " + userId);
+            
+            List<Post> posts = postRepository.findAllByUser(user);
+            if (posts == null || posts.isEmpty())
+                return new ArrayList<>();
+            
+            return posts.stream()
+            .filter(m -> m.getPostStatus() == PostStatus.PUBLISHED)
+            .toList();
+        }
+        
+        @Override
+        public List<Post> findPostsByUserId(Long userId, PaginationInfo pageInfo, Long lastSeenPostId) {
+            if (userId == null) throw new IllegalArgumentException("User id cannot be empty");
+            Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+            if (userId.equals(authenticatedUserId)) {
+                if (lastSeenPostId != null) return postRepository.findAllByUserIdAndLastSeenPostId(userId, lastSeenPostId, pageInfo.getPageSize());
+                return postRepository.findAllByUserId(userId, PageRequest.of(pageInfo.getPage() - 1, pageInfo.getPageSize(), Sort.by(Direction.DESC, "id")));
+            }
 
-        List<Post> posts = postRepository.findAllByUser(user);
-        if (posts == null || posts.isEmpty())
-            return new ArrayList<>();
-
-        return posts.stream()
-                .filter(m -> m.getPostStatus() == PostStatus.PUBLISHED)
-                .toList();
+            final boolean isFriend = friendService.isFriend(authenticatedUserId, userId);
+            if (!isFriend)
+                throw new ForbiddenPostAccessException("Forbidden: Cannot access posts for user with id " + userId);
+            
+            
+            if (lastSeenPostId != null) return postRepository.findAllByUserIdAndLastSeenPostIdAndPostStatus(userId, lastSeenPostId, PostStatus.PUBLISHED, pageInfo.getPageSize());
+            return postRepository.findAllByUserIdAndPostStatus(userId, PostStatus.PUBLISHED, PageRequest.of(pageInfo.getPage() - 1, pageInfo.getPageSize(), Sort.by(Sort.Direction.DESC, "id")));
     }
 
 }

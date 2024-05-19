@@ -11,6 +11,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.omarahmed42.socialmedia.dto.projection.UserPersonalInfoDto;
+import com.omarahmed42.socialmedia.dto.projection.UserPublicInfoDto;
+import com.omarahmed42.socialmedia.exception.ForbiddenException;
+import com.omarahmed42.socialmedia.exception.UserNotFoundException;
+import com.omarahmed42.socialmedia.mapper.UserMapper;
 import com.omarahmed42.socialmedia.model.Role;
 import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.model.graph.UserNode;
@@ -18,6 +23,7 @@ import com.omarahmed42.socialmedia.repository.RoleRepository;
 import com.omarahmed42.socialmedia.repository.UserRepository;
 import com.omarahmed42.socialmedia.repository.graph.UserNodeRepository;
 import com.omarahmed42.socialmedia.service.UserService;
+import com.omarahmed42.socialmedia.util.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +37,7 @@ public class UserServiceImpl implements UserService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
     @Override
     @Transactional
@@ -64,6 +71,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public Integer deleteUser(Long userId) {
+        throwIfBlankUserId(userId);
         Integer rowsAffected = 0;
         Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
@@ -84,6 +92,32 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public User getUser(Long userId) {
+        throwIfBlankUserId(userId);
         return userRepository.findById(userId).orElse(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true) 
+    public User getUserPersonalInfo(Long userId) {
+        throwIfBlankUserId(userId);
+        SecurityUtils.throwIfNotAuthenticated();
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+        if (!authenticatedUserId.equals(userId)) throw new ForbiddenException("Cannot access private information for user with id " + userId);
+        return userMapper.toEntity(userRepository.findUserPersonalInfoById(userId)
+                                .orElseThrow(() -> new UserNotFoundException("User not found with id  " + userId)));
+    }
+
+    @Override
+    @Transactional(readOnly = true) 
+    public User getUserPublicInfo(Long userId){
+        throwIfBlankUserId(userId);
+        SecurityUtils.throwIfNotAuthenticated();
+        return userMapper.toEntity(userRepository.findUserPublicInfoById(userId)
+                                .orElseThrow(() -> new UserNotFoundException("User not found with id " + userId)));
+    }
+
+    private void throwIfBlankUserId(Long userId) {
+        if (userId == null)
+            throw new IllegalArgumentException("User id cannot be empty");
     }
 }

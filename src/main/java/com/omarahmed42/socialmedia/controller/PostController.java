@@ -9,6 +9,7 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
+import com.omarahmed42.socialmedia.dto.PaginationInfo;
 import com.omarahmed42.socialmedia.dto.response.ReactionStatistics;
 import com.omarahmed42.socialmedia.model.Comment;
 import com.omarahmed42.socialmedia.model.Post;
@@ -48,6 +49,11 @@ public class PostController {
     @MutationMapping
     public Integer deletePost(@Argument Long id) {
         return postService.deletePost(id);
+    }
+
+    @QueryMapping
+    public List<Post> findPostsByUserId(@Argument Long userId, @Argument Integer page, @Argument Integer pageSize, @Argument Long lastSeenPostId) {
+        return postService.findPostsByUserId(userId, new PaginationInfo(page, pageSize), lastSeenPostId);
     }
 
     @SchemaMapping(typeName = "Post", field = "user")

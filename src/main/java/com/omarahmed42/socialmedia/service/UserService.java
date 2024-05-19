@@ -16,4 +16,8 @@ public interface UserService {
     Integer deleteUser(Long userId);
 
     User getUser(Long userId);
+
+    User getUserPersonalInfo(Long userId);
+
+    User getUserPublicInfo(Long userId);
 }

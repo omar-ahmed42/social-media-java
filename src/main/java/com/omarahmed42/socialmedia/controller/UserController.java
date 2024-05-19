@@ -7,10 +7,12 @@ import java.util.Set;
 
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
 import com.datastax.oss.driver.shaded.guava.common.collect.Sets;
+import com.omarahmed42.socialmedia.dto.PaginationInfo;
 import com.omarahmed42.socialmedia.model.Post;
 import com.omarahmed42.socialmedia.model.Role;
 import com.omarahmed42.socialmedia.model.User;
@@ -33,14 +35,26 @@ public class UserController {
         return userService.addUser(firstName, lastName, email, password, dateOfBirth, true, true, new HashSet<>(roles));
     }
 
-    @SchemaMapping(typeName = "User", field = "posts")
-    public List<Post> posts(User user) {
-        return postService.getPostsBy(user);
+    @QueryMapping
+    public User findUserPersonalInfo(@Argument Long userId) {
+        return userService.getUserPersonalInfo(userId);
     }
 
+    @QueryMapping
+    public User findUserPublicInfo(@Argument Long userId) {
+        return userService.getUserPublicInfo(userId);
+    }
+
+    @SchemaMapping(typeName = "User", field = "posts")
+    public List<Post> posts(User user) {
+        return postService.findPostsByUserId(user.getId(), new PaginationInfo(1, 15), null);
+    }
+    
     @SchemaMapping(typeName = "User", field = "roles")
     public Set<Role> roles(User user) {
         return Sets.newHashSet(); // TODO: Add business logic
     }
+
+
 
 }
