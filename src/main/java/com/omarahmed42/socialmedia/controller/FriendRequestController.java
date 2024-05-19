@@ -9,6 +9,7 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
 import com.omarahmed42.socialmedia.dto.PaginationInfo;
+import com.omarahmed42.socialmedia.enums.FriendRequestStatus;
 import com.omarahmed42.socialmedia.model.FriendRequest;
 import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.service.FriendRequestService;
@@ -58,5 +59,10 @@ public class FriendRequestController {
             @Argument Integer pageSize,
             @Argument Long after, @Argument Long before) {
         return friendRequestService.findFriendRequests(isSender, new PaginationInfo(page, pageSize), after, before);
+    }
+
+    @QueryMapping
+    public FriendRequest findPendingFriendRequestByFriendId(@Argument Long friendId) {
+        return friendRequestService.findFriendRequestByFriendId(friendId, FriendRequestStatus.PENDING);
     }
 }

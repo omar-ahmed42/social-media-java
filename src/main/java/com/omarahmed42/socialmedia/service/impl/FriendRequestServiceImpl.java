@@ -172,4 +172,13 @@ public class FriendRequestServiceImpl implements FriendRequestService {
 
         return friendRequestRepository.findAll(specs, pageable);
     }
+
+    @Override
+    public FriendRequest findFriendRequestByFriendId(Long friendId, FriendRequestStatus requestStatus) {
+        SecurityUtils.throwIfNotAuthenticated();
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+        return friendRequestRepository.findByFriendRequestStatus(authenticatedUserId, friendId, requestStatus).orElse(null);
+    }
+
+    
 }

@@ -3,6 +3,7 @@ package com.omarahmed42.socialmedia.service;
 import java.util.List;
 
 import com.omarahmed42.socialmedia.dto.PaginationInfo;
+import com.omarahmed42.socialmedia.enums.FriendRequestStatus;
 import com.omarahmed42.socialmedia.model.FriendRequest;
 
 public interface FriendRequestService {
@@ -16,4 +17,6 @@ public interface FriendRequestService {
 
     List<FriendRequest> findFriendRequests(boolean isSender, PaginationInfo paginationInfo,
             Long after, Long before);
+
+    FriendRequest findFriendRequestByFriendId(Long friendId, FriendRequestStatus pending);
 }
