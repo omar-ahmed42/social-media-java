@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.omarahmed42.socialmedia.dto.PaginationInfo;
 import com.omarahmed42.socialmedia.dto.event.FriendRequestEvent;
 import com.omarahmed42.socialmedia.enums.FriendRequestStatus;
+import com.omarahmed42.socialmedia.exception.InvalidInputException;
 import com.omarahmed42.socialmedia.exception.UserNotFoundException;
 import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.model.graph.UserNode;
@@ -142,5 +143,16 @@ public class FriendServiceImpl implements FriendService {
                 .distinct()
                 .toList();
         return userRepository.findAllById(friendsIds);
+    }
+
+    @Override
+    public boolean isFriend(Long friendId) {
+        if (friendId == null)
+            throw new InvalidInputException("Friend id cannot be empty");
+        SecurityUtils.throwIfNotAuthenticated();
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+        if (authenticatedUserId.equals(friendId))
+            throw new InvalidInputException("Authenticated user and friend are the same");
+        return userNodeRepository.isFriend(authenticatedUserId, friendId);
     }
 }

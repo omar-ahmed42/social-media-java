@@ -28,4 +28,9 @@ public class FriendController {
     public List<User> findFriends(@Argument Integer page, @Argument Integer pageSize) {
         return friendService.findFriends(new PaginationInfo(page, pageSize));
     }
+
+    @QueryMapping
+    public Boolean isFriend(@Argument Long friendId) {
+        return friendService.isFriend(friendId);
+    }
 }
