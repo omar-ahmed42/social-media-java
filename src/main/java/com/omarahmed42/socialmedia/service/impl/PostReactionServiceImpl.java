@@ -3,7 +3,6 @@ package com.omarahmed42.socialmedia.service.impl;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.omarahmed42.socialmedia.enums.PostStatus;
