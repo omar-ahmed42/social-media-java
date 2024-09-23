@@ -12,8 +12,8 @@ public class UserPersonalInfoDto extends UserPublicInfoDto {
     
     private String email;
 
-    public UserPersonalInfoDto(Long id, String firstName, String lastName, LocalDate dateOfBirth, String email, LocalDateTime createdAt) {
-        super(id, firstName, lastName, dateOfBirth, createdAt);
+    public UserPersonalInfoDto(Long id, String firstName, String lastName, LocalDate dateOfBirth, String email, LocalDateTime createdAt, AttachmentDto avatar, AttachmentDto coverPicture) {
+        super(id, firstName, lastName, dateOfBirth, createdAt, avatar, coverPicture);
         this.email = email;
     }
 }

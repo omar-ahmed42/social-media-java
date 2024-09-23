@@ -10,11 +10,13 @@ import com.omarahmed42.socialmedia.generator.SnowflakeUIDGenerator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -51,6 +53,14 @@ public class User extends Auditable {
 
     @Column(name = "active")
     private boolean active;
+
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "avatar_id", referencedColumnName = "id")
+    private Attachment avatar;
+
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "cover_pic_id", referencedColumnName = "id")
+    private Attachment coverPicture;
 
     @ManyToMany
     @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))

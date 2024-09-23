@@ -9,13 +9,18 @@ import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.datastax.oss.driver.shaded.guava.common.collect.Sets;
 import com.omarahmed42.socialmedia.dto.PaginationInfo;
 import com.omarahmed42.socialmedia.model.Post;
 import com.omarahmed42.socialmedia.model.Role;
 import com.omarahmed42.socialmedia.model.User;
+import com.omarahmed42.socialmedia.model.Attachment;
 import com.omarahmed42.socialmedia.service.PostService;
 import com.omarahmed42.socialmedia.service.UserService;
 
@@ -55,6 +60,27 @@ public class UserController {
         return Sets.newHashSet(); // TODO: Add business logic
     }
 
+    @PutMapping("/api/v1/users/me/avatar")
+    @ResponseBody
+    public ResponseEntity<Void> updateAvatar(MultipartFile avatarFile) {
+        userService.updateAvatar(avatarFile);
+        return ResponseEntity.ok().build();
+    }
 
+    @PutMapping("/api/v1/users/me/cover")
+    @ResponseBody
+    public ResponseEntity<Void> updateCover(MultipartFile coverFile) {
+        userService.updateCover(coverFile);
+        return ResponseEntity.ok().build();
+    }
 
+    @SchemaMapping(typeName = "User", field = "avatar")
+    public Attachment avatar(User user) {
+        return user.getAvatar();
+    }
+    
+    @SchemaMapping(typeName = "User", field = "coverPicture")
+    public Attachment coverPicture(User user) {
+        return user.getCoverPicture();
+    }
 }

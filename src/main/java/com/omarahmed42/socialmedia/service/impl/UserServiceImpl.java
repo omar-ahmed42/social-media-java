@@ -1,34 +1,51 @@
 package com.omarahmed42.socialmedia.service.impl;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.Uuid;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
-import com.omarahmed42.socialmedia.dto.projection.UserPersonalInfoDto;
-import com.omarahmed42.socialmedia.dto.projection.UserPublicInfoDto;
+import com.omarahmed42.socialmedia.enums.AttachmentStatus;
+import com.omarahmed42.socialmedia.enums.AttachmentType;
+import com.omarahmed42.socialmedia.exception.AttachmentNotFoundException;
 import com.omarahmed42.socialmedia.exception.ForbiddenException;
+import com.omarahmed42.socialmedia.exception.UnsupportedMediaExtensionException;
 import com.omarahmed42.socialmedia.exception.UserNotFoundException;
 import com.omarahmed42.socialmedia.mapper.UserMapper;
+import com.omarahmed42.socialmedia.model.Attachment;
 import com.omarahmed42.socialmedia.model.Role;
 import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.model.graph.UserNode;
+import com.omarahmed42.socialmedia.repository.AttachmentRepository;
 import com.omarahmed42.socialmedia.repository.RoleRepository;
 import com.omarahmed42.socialmedia.repository.UserRepository;
 import com.omarahmed42.socialmedia.repository.graph.UserNodeRepository;
+import com.omarahmed42.socialmedia.service.FileService;
 import com.omarahmed42.socialmedia.service.UserService;
+import com.omarahmed42.socialmedia.util.AttachmentUtils;
 import com.omarahmed42.socialmedia.util.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -38,6 +55,17 @@ public class UserServiceImpl implements UserService {
 
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+
+    private final FileService fileService;
+    private final AttachmentRepository attachmentRepository;
+
+    private final TransactionTemplate transactionTemplate;
+
+    @Value("${storage.users.path}")
+    private String userStoragePath;
+
+    @Value("${storage.users.public.path}")
+    private String userPublicStoragePath;
 
     @Override
     @Transactional
@@ -97,27 +125,169 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(readOnly = true) 
+    @Transactional(readOnly = true)
     public User getUserPersonalInfo(Long userId) {
         throwIfBlankUserId(userId);
         SecurityUtils.throwIfNotAuthenticated();
         Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
-        if (!authenticatedUserId.equals(userId)) throw new ForbiddenException("Cannot access private information for user with id " + userId);
+        if (!authenticatedUserId.equals(userId))
+            throw new ForbiddenException("Cannot access private information for user with id " + userId);
         return userMapper.toEntity(userRepository.findUserPersonalInfoById(userId)
-                                .orElseThrow(() -> new UserNotFoundException("User not found with id  " + userId)));
+                .orElseThrow(() -> new UserNotFoundException("User not found with id  " + userId)));
     }
 
     @Override
-    @Transactional(readOnly = true) 
-    public User getUserPublicInfo(Long userId){
+    @Transactional(readOnly = true)
+    public User getUserPublicInfo(Long userId) {
         throwIfBlankUserId(userId);
         SecurityUtils.throwIfNotAuthenticated();
         return userMapper.toEntity(userRepository.findUserPublicInfoById(userId)
-                                .orElseThrow(() -> new UserNotFoundException("User not found with id " + userId)));
+                .orElseThrow(() -> new UserNotFoundException("User not found with id " + userId)));
     }
 
     private void throwIfBlankUserId(Long userId) {
         if (userId == null)
             throw new IllegalArgumentException("User id cannot be empty");
     }
+
+    @Override
+    public void updateAvatar(MultipartFile avatarMultipartFile) {
+        SecurityUtils.throwIfNotAuthenticated();
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+
+        String fileExtension = FilenameUtils.getExtension(avatarMultipartFile.getOriginalFilename());
+
+        if (!isValidImageExtension(fileExtension))
+            throw new UnsupportedMediaExtensionException(fileExtension + " extension is not supported");
+
+        AttachmentType attachmentType = AttachmentType.IMAGE;
+
+        String filename = Uuid.randomUuid().toString() + AttachmentUtils.EXTENSION_SEPARATOR
+                + fileExtension;
+
+        String fileUrl = userPublicStoragePath + File.separator + authenticatedUserId.toString() + File.separator + filename;
+
+        Attachment attachment = new Attachment();
+        attachment.setExtension(fileExtension);
+        attachment.setName(filename);
+        attachment.setSize(avatarMultipartFile.getSize());
+        attachment.setStatus(AttachmentStatus.UPLOADING);
+        attachment.setUrl(fileUrl);
+        attachment.setAttachmentType(attachmentType);
+        attachment = attachmentRepository.save(attachment);
+
+        storeFile(avatarMultipartFile, attachment, authenticatedUserId, "user-avatar");
+    }
+
+    private boolean isValidImageExtension(String fileExtension) {
+        for (String extension : AttachmentUtils.IMAGE_EXTENSIONS) {
+            if (fileExtension.equalsIgnoreCase(extension))
+                return true;
+        }
+
+        return false;
+    }
+
+    public void storeFile(MultipartFile multipartFile, Attachment attachment, Long userId, String topicName) {
+        String fileUrl = attachment.getUrl();
+        String requestId = UUID.randomUUID().toString();
+        try {
+            log.info("MY_PATH: " + Path.of(fileUrl).toString());
+            fileService.copy(multipartFile.getInputStream(), Path.of(fileUrl));
+            Map<String, Object> successMessage = buildMessage(userId, attachment.getId(), AttachmentStatus.COMPLETED);
+            kafkaTemplate.send(topicName, requestId, successMessage);
+        } catch (Exception e) {
+            log.error("Error while saving attachment: {}", e);
+            Map<String, Object> failedMessage = buildMessage(userId, attachment.getId(), AttachmentStatus.FAILED);
+            kafkaTemplate.send(topicName, requestId, failedMessage);
+        }
+    }
+
+    private Map<String, Object> buildMessage(Long userId, Long attachmentId, AttachmentStatus status) {
+        return Map.of("userId", userId, "attachmentId", attachmentId,
+                "status",
+                status.toString());
+    }
+
+    @KafkaListener(topics = "user-avatar")
+    public void consumeAvatar(ConsumerRecord<String, Map<String, Object>> consumerRecord) {
+        Map<String, Object> value = consumerRecord.value();
+        Long userId = (Long) value.get("userId");
+        Long attachmentId = (Long) value.get("attachmentId");
+        AttachmentStatus status = AttachmentStatus.valueOf((String) value.get("status"));
+
+        transactionTemplate.execute(transactionStatus -> {
+            Attachment newAvatar = attachmentRepository.findById(attachmentId)
+                    .orElseThrow(AttachmentNotFoundException::new);
+            newAvatar.setStatus(status);
+            newAvatar = attachmentRepository.save(newAvatar);
+
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found"));
+
+            Attachment oldAvatar = user.getAvatar();
+            user.setAvatar(newAvatar);
+
+            if (oldAvatar != null)
+                attachmentRepository.delete(oldAvatar);
+            return userRepository.save(user);
+        });
+    }
+
+    @Override
+    public void updateCover(MultipartFile coverFile) {
+        SecurityUtils.throwIfNotAuthenticated();
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+
+        String fileExtension = FilenameUtils.getExtension(coverFile.getOriginalFilename());
+
+        if (!isValidImageExtension(fileExtension))
+            throw new UnsupportedMediaExtensionException(fileExtension + " extension is not supported");
+
+        AttachmentType attachmentType = AttachmentType.IMAGE;
+
+        String filename = Uuid.randomUuid().toString() + AttachmentUtils.EXTENSION_SEPARATOR
+                + fileExtension;
+
+        String fileUrl = userPublicStoragePath + File.separator + authenticatedUserId.toString() + File.separator + filename;
+
+        Attachment attachment = new Attachment();
+        attachment.setExtension(fileExtension);
+        attachment.setName(filename);
+        attachment.setSize(coverFile.getSize());
+        attachment.setStatus(AttachmentStatus.UPLOADING);
+        attachment.setUrl(fileUrl);
+        attachment.setAttachmentType(attachmentType);
+        attachment = attachmentRepository.save(attachment);
+
+        storeFile(coverFile, attachment, authenticatedUserId, "user-cover-picture");
+    }
+
+    @KafkaListener(topics = "user-cover-picture")
+    public void consumeCoverPicture(ConsumerRecord<String, Map<String, Object>> consumerRecord) {
+        Map<String, Object> value = consumerRecord.value();
+        Long userId = (Long) value.get("userId");
+        Long attachmentId = (Long) value.get("attachmentId");
+        log.info("Status: {}", (String) value.get("status"));
+        AttachmentStatus attachmentStatus = AttachmentStatus.valueOf((String) value.get("status"));
+
+        transactionTemplate.execute(transactionStatus -> {
+            Attachment newCoverPicture = attachmentRepository.findById(attachmentId)
+                    .orElseThrow(AttachmentNotFoundException::new);
+            newCoverPicture.setStatus(attachmentStatus);
+            newCoverPicture = attachmentRepository.save(newCoverPicture);
+
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found"));
+
+            Attachment oldCoverPicture = user.getCoverPicture();
+            user.setCoverPicture(newCoverPicture);
+
+            if (oldCoverPicture != null)
+                attachmentRepository.delete(oldCoverPicture);
+            return userRepository.save(user);
+        });
+        
+    }
+
 }

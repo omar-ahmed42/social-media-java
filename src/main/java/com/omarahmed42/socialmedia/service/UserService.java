@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.Set;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.omarahmed42.socialmedia.model.User;
 
@@ -20,4 +21,8 @@ public interface UserService {
     User getUserPersonalInfo(Long userId);
 
     User getUserPublicInfo(Long userId);
+
+    void updateAvatar(MultipartFile avatarFile);
+
+    void updateCover(MultipartFile coverFile);
 }
