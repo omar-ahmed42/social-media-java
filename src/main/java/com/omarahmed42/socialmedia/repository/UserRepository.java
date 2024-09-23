@@ -20,9 +20,30 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmail(String email);
 
-    @Query(value = "SELECT new com.omarahmed42.socialmedia.dto.projection.UserPersonalInfoDto(u.id, u.firstName, u.lastName, u.dateOfBirth, u.email, u.createdAt) FROM User u WHERE id = :userId")
+    @Query(value = """
+        SELECT new com.omarahmed42.socialmedia.dto.projection.UserPersonalInfoDto(u.id, u.firstName, u.lastName, u.dateOfBirth,
+         u.email, u.createdAt, new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(avatar.id, avatar.url), 
+         new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(coverPicture.id, coverPicture.url)
+        ) FROM User u 
+        LEFT JOIN Attachment avatar
+             ON avatar.id = u.avatar.id 
+        LEFT JOIN Attachment coverPicture
+         ON coverPicture.id = u.coverPicture.id
+         WHERE u.id = :userId
+            """)
     Optional<UserPersonalInfoDto> findUserPersonalInfoById(@Param("userId") Long userId);
 
-    @Query(value = "SELECT new com.omarahmed42.socialmedia.dto.projection.UserPublicInfoDto(u.id, u.firstName, u.lastName, u.dateOfBirth, u.createdAt) FROM User u WHERE id = :userId")
+    @Query(value = """
+        SELECT new com.omarahmed42.socialmedia.dto.projection.UserPublicInfoDto(u.id, u.firstName, u.lastName, 
+        u.dateOfBirth, u.createdAt, 
+        new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(avatar.id, avatar.url),
+        new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(coverPicture.id, coverPicture.url)) 
+        FROM User u
+        LEFT JOIN Attachment avatar
+             ON avatar.id = u.avatar.id
+        LEFT JOIN Attachment coverPicture
+         ON coverPicture.id = u.coverPicture.id 
+         WHERE u.id = :userId
+                """)
     Optional<UserPublicInfoDto> findUserPublicInfoById(@Param("userId") Long userId);
 }
