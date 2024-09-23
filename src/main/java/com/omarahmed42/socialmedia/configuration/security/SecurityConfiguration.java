@@ -37,6 +37,7 @@ public class SecurityConfiguration {
                                 .requestMatchers("/graphql").permitAll()
                                 .requestMatchers("/graphql/**").permitAll()
                                 .requestMatchers("/graphiql").permitAll()
+                                .requestMatchers("/uploads/**").permitAll()
                                 .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider()).addFilterBefore(
