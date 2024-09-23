@@ -13,6 +13,8 @@ type User {
   createdAt: DateTime
   roles: [Role]
   posts: [Post]
+  avatar: Attachment
+  coverPicture: Attachment
 }
 
 type Role {
@@ -100,6 +102,11 @@ input SavePostInput {
   postStatus: String
 }
 
+type Attachment {
+  id: ID
+  url: String
+}
+
 input SaveCommentInput {
   id: ID
   postId: ID
@@ -170,5 +177,4 @@ type Mutation {
 type Subscription {
   messageSent(conversationId: ID!): Message
   messageReceived: Message
-  messageReceived2: Message
 }
