@@ -158,7 +158,7 @@ public class CommentAttachmentServiceImpl implements CommentAttachmentService {
         Map<String, Object> value = consumerRecord.value();
         Long commentId = (Long) value.get("commentId");
         Long attachmentId = (Long) value.get("attachmentId");
-        AttachmentStatus status = AttachmentStatus.valueOf("status");
+        AttachmentStatus status = AttachmentStatus.valueOf((String) value.get("status"));
 
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(AttachmentNotFoundException::new);

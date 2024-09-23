@@ -152,7 +152,8 @@ public class PostAttachmentServiceImpl implements PostAttachmentService {
         Map<String, Object> value = consumerRecord.value();
         Long postId = (Long) value.get("postId");
         Long attachmentId = (Long) value.get("attachmentId");
-        AttachmentStatus status = AttachmentStatus.valueOf("status");
+        AttachmentStatus status = AttachmentStatus.valueOf((String) value.get("status"));
+
 
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(AttachmentNotFoundException::new);
