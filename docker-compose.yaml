@@ -82,6 +82,8 @@ services:
     image: social_media:latest
     ports:
       - "$DOCKER_HOST_SOCIAL_MEDIA_PORT:$DOCKER_CONTAINER_SOCIAL_MEDIA_PORT"
+    volumes:
+      - ${SM_HOST_VOLUME}:/uploads
     env_file:
       - social_media.env
     networks:
@@ -109,6 +111,8 @@ services:
       - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
     ports:
       - '$DOCKER_HOST_MYSQL_PORT:$DOCKER_CONTAINER_MYSQL_PORT'
+    volumes:
+      - ${MYSQL_HOST_VOLUME}:/var/lib/mysql
     networks:
       - social-media-network
     healthcheck:
