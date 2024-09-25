@@ -35,6 +35,14 @@ public class AuthenticationController {
         }
     }
 
+    @PostMapping("/tokens/refresh")
+    public String postMethodName(@RequestBody String entity) {
+        
+        
+        return entity;
+    }
+    
+
     @PostMapping("/signup")
     public ResponseEntity<Void> signUp(@RequestBody SignupRequest signupRequest) {
         Long userId = authenticationService.signUp(signupRequest);

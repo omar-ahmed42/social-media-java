@@ -146,8 +146,10 @@ class AuthenticationServiceImplTest {
         verify(userDetailsService, times(2)).loadUserByUsername(anyString());
 
         assertNotNull(response);
-        assertNotNull(response.getToken());
-        assertNotEquals("", response.getToken());
+        assertNotNull(response.getAccessToken());
+        assertNotNull(response.getRefreshToken());
+        assertNotEquals("", response.getAccessToken());
+        assertNotEquals("", response.getRefreshToken());
     }
 
     @Test

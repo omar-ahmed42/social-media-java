@@ -8,13 +8,17 @@ import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import com.omarahmed42.socialmedia.builder.Token;
+import com.omarahmed42.socialmedia.dto.response.Jwt;
 import com.omarahmed42.socialmedia.service.JwtService;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -73,4 +77,36 @@ public class JwtServiceImpl implements JwtService {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSigningKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
+    @Override
+    public String generateToken(UserDetails userDetails, Long expiration) {
+        return generateToken(new HashMap<>(), userDetails, expiration);
+    }
+
+    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, Long expiration) {
+        return Jwts.builder().claims(extraClaims).subject(userDetails.getUsername())
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSigningKey()).compact();
+    }
+
+    @Override
+    public Jwt generateToken(Token token) {
+        JwtBuilder jwtBuilder = Jwts.builder();
+        if (nonEmpty(token.getId())) jwtBuilder.id(token.getId());
+        if (nonEmpty(token.getIssuer())) jwtBuilder.issuer(token.getIssuer());
+        if (nonEmpty(token.getSubject())) jwtBuilder.subject(token.getSubject());
+        if (nonEmpty(token.getAudience())) jwtBuilder.audience().add(token.getAudience());
+        if (nonEmpty(token.getExpiration())) jwtBuilder.expiration(token.getExpiration());
+        if (nonEmpty(token.getIssuedAt())) jwtBuilder.issuedAt(token.getIssuedAt());
+        if (nonEmpty(token.getNotBefore())) jwtBuilder.notBefore(token.getNotBefore());
+        if (nonEmpty(token.getExtra())) jwtBuilder.claims(token.getExtra());
+
+        return new Jwt(jwtBuilder.signWith(getSigningKey()).compact());
+    }
+
+    public boolean nonEmpty(Object obj) {
+        return ObjectUtils.isNotEmpty(obj);
+    }
+
 }
