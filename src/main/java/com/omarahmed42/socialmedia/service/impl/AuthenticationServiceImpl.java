@@ -19,6 +19,7 @@ import com.omarahmed42.socialmedia.dto.response.JwtResponse;
 import com.omarahmed42.socialmedia.enums.Roles;
 import com.omarahmed42.socialmedia.exception.EmailAlreadyExistsException;
 import com.omarahmed42.socialmedia.exception.UnderAgeException;
+import com.omarahmed42.socialmedia.exception.UsernameAlreadyExistsException;
 import com.omarahmed42.socialmedia.mapper.UserMapper;
 import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.repository.RoleRepository;
@@ -60,6 +61,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         User user = userMapper.toEntity(request);
 
         throwIfInvalidAge(request.getDateOfBirth());
+        throwIfUsernameExists(request.getUsername());
         throwIfEmailExists(request.getEmail());
 
         hashAndSetPassword(user, user.getPassword());
@@ -83,6 +85,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     private int getMinimumAge() {
         return MINIMUM_AGE;
+    }
+
+    private void throwIfUsernameExists(String username) {
+        if (userRepository.existsByUsername(username))
+            throw new UsernameAlreadyExistsException();
     }
 
     private void throwIfEmailExists(String email) {

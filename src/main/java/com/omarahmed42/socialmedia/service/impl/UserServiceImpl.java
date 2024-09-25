@@ -69,11 +69,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public User addUser(String firstName, String lastName, String email, String password, LocalDate dateOfBirth,
+    public User addUser(String firstName, String lastName, String username, String email, String password, LocalDate dateOfBirth,
             boolean enabled, boolean active, Set<String> rolesNames) {
         User user = new User();
         user.setFirstName(firstName);
         user.setLastName(lastName);
+        user.setUsername(username);
         user.setEmail(email);
         user.setDateOfBirth(dateOfBirth);
         user.setPassword(passwordEncoder.encode(password));

@@ -34,10 +34,10 @@ public class UserController {
     private final PostService postService;
 
     @MutationMapping
-    public User addUser(@Argument String firstName, @Argument String lastName, @Argument String email,
+    public User addUser(@Argument String firstName, @Argument String lastName, @Argument String email, @Argument String username,
             @Argument String password, @Argument LocalDate dateOfBirth,
             @Argument List<String> roles) {
-        return userService.addUser(firstName, lastName, email, password, dateOfBirth, true, true, new HashSet<>(roles));
+        return userService.addUser(firstName, lastName, username, email, password, dateOfBirth, true, true, new HashSet<>(roles));
     }
 
     @QueryMapping

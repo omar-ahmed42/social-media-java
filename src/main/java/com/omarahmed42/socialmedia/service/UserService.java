@@ -9,7 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.omarahmed42.socialmedia.model.User;
 
 public interface UserService {
-    User addUser(String firstName, String lastName, String email, String password, LocalDate dateOfBirth,
+    User addUser(String firstName, String lastName, String username, String email, String password, LocalDate dateOfBirth,
             boolean enabled, boolean active, Set<String> rolesNames);
 
     void addUserToGraph(ConsumerRecord<String, Long> consumerRecord);
