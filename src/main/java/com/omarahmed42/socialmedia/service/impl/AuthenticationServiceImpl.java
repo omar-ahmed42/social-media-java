@@ -1,9 +1,7 @@
 package com.omarahmed42.socialmedia.service.impl;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.Date;
 import java.util.UUID;
 
 import org.springframework.kafka.core.KafkaTemplate;
@@ -15,11 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.omarahmed42.socialmedia.builder.Token;
 import com.omarahmed42.socialmedia.configuration.security.CustomUserDetails;
 import com.omarahmed42.socialmedia.dto.request.LoginRequest;
 import com.omarahmed42.socialmedia.dto.request.SignupRequest;
-import com.omarahmed42.socialmedia.dto.response.Jwt;
 import com.omarahmed42.socialmedia.dto.response.JwtResponse;
 import com.omarahmed42.socialmedia.enums.Roles;
 import com.omarahmed42.socialmedia.exception.EmailAlreadyExistsException;
@@ -54,26 +50,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private static final int MINIMUM_AGE = 16;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public JwtResponse login(LoginRequest request) {
         authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
 
-        Token builtAccessToken = Token.builder().subject(userDetails.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + Duration.ofMinutes(24L).toMillis())).build();
-        Jwt accessToken = jwtService.generateToken(builtAccessToken);
+        JwtResponse jwtResponse = jwtService.generateTokens(userDetails.getUsername());
+        refreshTokenService.storeToken(jwtService.parse(jwtResponse.getRefreshToken()),
+                ((CustomUserDetails) userDetails).getUserId());
 
-        Token builtRefreshToken = Token.builder().id(UUID.randomUUID().toString())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + Duration.ofDays(15L).toMillis())).build();
-
-        Jwt refreshToken = jwtService
-                .generateToken(builtRefreshToken);
-
-        refreshTokenService.storeToken(builtRefreshToken, ((CustomUserDetails) userDetails).getUserId());
-        return new JwtResponse(accessToken.token(), refreshToken.token());
+        return jwtResponse;
     }
 
     @Override
