@@ -1,20 +1,21 @@
 package com.omarahmed42.socialmedia.service.impl;
 
 import java.security.Key;
+import java.time.Duration;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.omarahmed42.socialmedia.builder.Token;
 import com.omarahmed42.socialmedia.dto.response.Jwt;
+import com.omarahmed42.socialmedia.dto.response.JwtResponse;
 import com.omarahmed42.socialmedia.service.JwtService;
 
 import io.jsonwebtoken.Claims;
@@ -35,26 +36,13 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
-    }
-
-    @Override
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String userName = extractUserName(token);
-        return (userName.equals(userDetails.getUsername())) && !isTokenExpired(token);
+    public boolean isTokenValid(String token) {
+        return !isTokenExpired(token);
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolvers) {
         final Claims claims = extractAllClaims(token);
         return claimsResolvers.apply(claims);
-    }
-
-    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        return Jwts.builder().claims(extraClaims).subject(userDetails.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24))
-                .signWith(getSigningKey()).compact();
     }
 
     private boolean isTokenExpired(String token) {
@@ -79,34 +67,55 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String generateToken(UserDetails userDetails, Long expiration) {
-        return generateToken(new HashMap<>(), userDetails, expiration);
-    }
-
-    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, Long expiration) {
-        return Jwts.builder().claims(extraClaims).subject(userDetails.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSigningKey()).compact();
-    }
-
-    @Override
     public Jwt generateToken(Token token) {
         JwtBuilder jwtBuilder = Jwts.builder();
-        if (nonEmpty(token.getId())) jwtBuilder.id(token.getId());
-        if (nonEmpty(token.getIssuer())) jwtBuilder.issuer(token.getIssuer());
-        if (nonEmpty(token.getSubject())) jwtBuilder.subject(token.getSubject());
-        if (nonEmpty(token.getAudience())) jwtBuilder.audience().add(token.getAudience());
-        if (nonEmpty(token.getExpiration())) jwtBuilder.expiration(token.getExpiration());
-        if (nonEmpty(token.getIssuedAt())) jwtBuilder.issuedAt(token.getIssuedAt());
-        if (nonEmpty(token.getNotBefore())) jwtBuilder.notBefore(token.getNotBefore());
-        if (nonEmpty(token.getExtra())) jwtBuilder.claims(token.getExtra());
+        if (nonEmpty(token.getId()))
+            jwtBuilder.id(token.getId());
+        if (nonEmpty(token.getIssuer()))
+            jwtBuilder.issuer(token.getIssuer());
+        if (nonEmpty(token.getSubject()))
+            jwtBuilder.subject(token.getSubject());
+        if (nonEmpty(token.getAudience()))
+            jwtBuilder.audience().add(token.getAudience());
+        if (nonEmpty(token.getExpiration()))
+            jwtBuilder.expiration(token.getExpiration());
+        if (nonEmpty(token.getIssuedAt()))
+            jwtBuilder.issuedAt(token.getIssuedAt());
+        if (nonEmpty(token.getNotBefore()))
+            jwtBuilder.notBefore(token.getNotBefore());
+        if (nonEmpty(token.getExtra()))
+            jwtBuilder.claims(token.getExtra());
 
         return new Jwt(jwtBuilder.signWith(getSigningKey()).compact());
     }
 
-    public boolean nonEmpty(Object obj) {
+    private boolean nonEmpty(Object obj) {
         return ObjectUtils.isNotEmpty(obj);
+    }
+
+    @Override
+    public Token parse(String jwt) {
+        Claims payload = extractAllClaims(jwt);
+
+        return Token.builder().id(payload.getId()).issuer(payload.getIssuer()).subject(payload.getSubject())
+                .audience(StringUtils.join(payload.getAudience(), ", ")).expiration(payload.getExpiration())
+                .notBefore(payload.getNotBefore()).issuedAt(payload.getIssuedAt()).build();
+    }
+
+    @Override
+    public JwtResponse generateTokens(String subject) {
+        Token builtAccessToken = Token.builder().subject(subject)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + Duration.ofMinutes(24L).toMillis())).build();
+        Jwt accessToken = generateToken(builtAccessToken);
+
+        Token builtRefreshToken = Token.builder().id(UUID.randomUUID().toString())
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + Duration.ofDays(15L).toMillis())).build();
+
+        Jwt refreshToken = generateToken(builtRefreshToken);
+
+        return new JwtResponse(accessToken.token(), refreshToken.token());
     }
 
 }
