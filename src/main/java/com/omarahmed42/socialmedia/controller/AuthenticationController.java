@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.omarahmed42.socialmedia.dto.request.LoginRequest;
 import com.omarahmed42.socialmedia.dto.request.SignupRequest;
+import com.omarahmed42.socialmedia.dto.response.Jwt;
 import com.omarahmed42.socialmedia.dto.response.JwtResponse;
 import com.omarahmed42.socialmedia.service.AuthenticationService;
+import com.omarahmed42.socialmedia.service.RefreshTokenService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
+    private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
     public ResponseEntity<JwtResponse> login(@RequestBody LoginRequest loginRequest) {
@@ -36,12 +39,9 @@ public class AuthenticationController {
     }
 
     @PostMapping("/tokens/refresh")
-    public String postMethodName(@RequestBody String entity) {
-        
-        
-        return entity;
+    public ResponseEntity<JwtResponse> refreshToken(@RequestBody Jwt refreshToken) {
+        return ResponseEntity.ok(refreshTokenService.refreshToken(refreshToken));
     }
-    
 
     @PostMapping("/signup")
     public ResponseEntity<Void> signUp(@RequestBody SignupRequest signupRequest) {
