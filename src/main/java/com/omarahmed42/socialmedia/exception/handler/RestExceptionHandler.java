@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.datastax.oss.driver.api.core.servererrors.AlreadyExistsException;
+import com.omarahmed42.socialmedia.exception.BadRequestException;
 import com.omarahmed42.socialmedia.exception.ConflictException;
+import com.omarahmed42.socialmedia.exception.ForbiddenException;
 import com.omarahmed42.socialmedia.exception.NotFoundException;
 
 import lombok.Data;
@@ -54,10 +56,22 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(401).body(new ErrorMessage("Incorrect email or password"));
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorMessage> handleForbiddenException(ForbiddenException forbiddenException) {
+        logError(forbiddenException);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorMessage(forbiddenException.getMessage()));
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorMessage> handleBadRequestException(BadRequestException badRequestException) {
+        logError(badRequestException);
+        return ResponseEntity.badRequest().body(new ErrorMessage(badRequestException.getMessage()));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorMessage> handleRuntimeException(RuntimeException runtimeException) {
         logError(runtimeException);
-        return ResponseEntity.status(422).build();
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
     }
 
     @ExceptionHandler(Exception.class)
