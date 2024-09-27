@@ -14,6 +14,7 @@ import com.omarahmed42.socialmedia.exception.BadRequestException;
 import com.omarahmed42.socialmedia.exception.ConflictException;
 import com.omarahmed42.socialmedia.exception.ForbiddenException;
 import com.omarahmed42.socialmedia.exception.NotFoundException;
+import com.omarahmed42.socialmedia.exception.UnauthorizedException;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +61,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ErrorMessage> handleForbiddenException(ForbiddenException forbiddenException) {
         logError(forbiddenException);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorMessage(forbiddenException.getMessage()));
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorMessage> handleUnauthorizedException(UnauthorizedException unauthorizedException) {
+        logError(unauthorizedException);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorMessage(unauthorizedException.getMessage()));
     }
 
     @ExceptionHandler(BadRequestException.class)
