@@ -69,7 +69,8 @@ public class PostReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         Long count = ops.get(key);
         if (count == null)
-            count = postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType, Long.parseLong(postId));
+            count = postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType,
+                    Long.parseLong(postId));
 
         ops.set(key, count, Duration.ofHours(12));
         return count;
@@ -95,7 +96,8 @@ public class PostReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         final String key = key(postId, activityType);
 
-        ops.setIfAbsent(key, postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType, Long.parseLong(postId)), Duration.ofHours(12));
+        ops.setIfAbsent(key, postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType,
+                Long.parseLong(postId)), Duration.ofHours(12));
         ops.increment(key, value);
     }
 
@@ -113,7 +115,8 @@ public class PostReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         final String key = key(postId, activityType);
 
-        Long count = postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType, Long.parseLong(postId));
+        Long count = postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType,
+                Long.parseLong(postId));
         log.info("COUNT: {}", count);
         ops.setIfAbsent(key, count - 1, Duration.ofHours(12));
         ops.increment(key);
@@ -147,7 +150,8 @@ public class PostReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         final String key = key(postId, activityType);
 
-        ops.setIfAbsent(key, postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType, Long.parseLong(postId)), Duration.ofHours(12));
+        ops.setIfAbsent(key, postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType,
+                Long.parseLong(postId)), Duration.ofHours(12));
         ops.decrement(key, value);
     }
 
@@ -165,7 +169,8 @@ public class PostReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         final String key = key(postId, activityType);
 
-        ops.setIfAbsent(key, postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType, Long.parseLong(postId)), Duration.ofHours(12));
+        ops.setIfAbsent(key, postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType,
+                Long.parseLong(postId)), Duration.ofHours(12));
         ops.decrement(key);
     }
 
@@ -204,7 +209,8 @@ public class PostReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         Long count = ops.get(key);
         if (count == null)
-            count = postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType, Long.parseLong(postId));
+            count = postReactionRepository.countByReactionNameAndPostReactionId_Post_id(activityType,
+                    Long.parseLong(postId));
 
         ops.set(key, count, Duration.ofHours(12));
         return CompletableFuture.completedFuture(count);
