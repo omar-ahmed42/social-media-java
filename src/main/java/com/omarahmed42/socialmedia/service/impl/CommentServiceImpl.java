@@ -31,6 +31,7 @@ import com.omarahmed42.socialmedia.service.FriendService;
 import com.omarahmed42.socialmedia.specification.CommentSpecification;
 import com.omarahmed42.socialmedia.util.SecurityUtils;
 
+import io.jsonwebtoken.lang.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -299,7 +300,7 @@ public class CommentServiceImpl implements CommentService {
 
         final boolean isFriend = friendService.isFriend(authenticatedUserId, post.getUser().getId());
         final boolean isBlocked = blockingService.isBlocked(authenticatedUserId, post.getUser().getId());
-        if (!isFriend || isBlocked) {
+        if (!isFriend || isBlocked || !Objects.nullSafeEquals(PostStatus.PUBLISHED, post.getPostStatus())) {
             log.error("Illegal access by user with id {} to retrieve comments for post with id {}", authenticatedUserId,
                     post.getId());
             /*
@@ -330,6 +331,29 @@ public class CommentServiceImpl implements CommentService {
         } else {
             return PageRequest.ofSize(pageInfo.getPageSize()).withSort(sort);
         }
+    }
+
+    @Override
+    public Long countCommentsOnPost(Long postId) {
+        if (postId == null)
+            throw new InvalidInputException("Post id cannot be null");
+
+        Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+        if (isPostOwner(post, authenticatedUserId)) {
+            return commentRepository.countByPostIdAndCommentStatus(postId, CommentStatus.PUBLISHED);
+        }
+
+        final boolean isFriend = friendService.isFriend(authenticatedUserId, post.getUser().getId());
+        final boolean isBlocked = blockingService.isBlocked(authenticatedUserId, post.getUser().getId());
+        if (!isFriend || isBlocked || !Objects.nullSafeEquals(PostStatus.PUBLISHED, post.getPostStatus())) {
+            log.error("Illegal access by user with id {} to count comments for post with id {}", authenticatedUserId,
+                    post.getId());
+            throw new PostNotFoundException();
+        }
+
+        return commentRepository.countByPostIdAndCommentStatus(postId, CommentStatus.PUBLISHED);
     }
 
 }

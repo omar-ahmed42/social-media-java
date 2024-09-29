@@ -148,6 +148,7 @@ type Query {
     pageSize: PositiveInt = 15
     after: Long
   ): [Comment]
+  countCommentsOnPost(postId: ID!): Long
 }
 
 # Mutations

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import com.omarahmed42.socialmedia.enums.CommentStatus;
 import com.omarahmed42.socialmedia.model.Comment;
 import com.omarahmed42.socialmedia.model.CommentAttachment;
 
@@ -26,4 +27,6 @@ public interface CommentRepository extends JpaRepository<Comment, Long>, JpaSpec
     Comment save(Comment comment);
 
     List<CommentAttachment> findCommentAttachmentsById(Long commentId);
+
+    Long countByPostIdAndCommentStatus(Long postId, CommentStatus status);
 }

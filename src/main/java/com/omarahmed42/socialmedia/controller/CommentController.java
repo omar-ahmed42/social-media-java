@@ -74,4 +74,9 @@ public class CommentController {
             @Argument Long after) {
         return commentService.getCommentsByPostId(postId, new PaginationInfo(page, pageSize), after);
     }
+
+    @QueryMapping
+    public Long countCommentsOnPost(@Argument Long postId) {
+        return commentService.countCommentsOnPost(postId);
+    }
 }

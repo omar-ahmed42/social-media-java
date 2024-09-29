@@ -20,4 +20,6 @@ public interface CommentService {
     List<CommentAttachment> getCommentAttachmentsBy(Comment comment);
 
     List<Comment> getCommentsByPostId(Long postId, PaginationInfo pageInfo, Long lastSeenCommentId);
+
+    Long countCommentsOnPost(Long postId);
 }
