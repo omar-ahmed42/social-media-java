@@ -11,6 +11,7 @@ import com.omarahmed42.socialmedia.model.User;
 public interface FriendService {
 
     boolean isFriend(Long userId, Long postOwnerId);
+
     boolean isFriend(Long friendId);
 
     boolean unfriend(Long friendId);
@@ -18,5 +19,7 @@ public interface FriendService {
     void consume(ConsumerRecord<String, FriendRequestEvent> kafkaRecord);
 
     List<User> findFriends(PaginationInfo paginationInfo);
+
+    Long countFriends(Long userId);
 
 }

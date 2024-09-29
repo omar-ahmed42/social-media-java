@@ -155,4 +155,13 @@ public class FriendServiceImpl implements FriendService {
             throw new InvalidInputException("Authenticated user and friend are the same");
         return userNodeRepository.isFriend(authenticatedUserId, friendId);
     }
+
+    @Override
+    public Long countFriends(Long userId) {
+        if (userId == null)
+            throw new InvalidInputException("User ID cannot be empty");
+
+        SecurityUtils.throwIfNotAuthenticated();
+        return userNodeRepository.countFriends(userId);
+    }
 }

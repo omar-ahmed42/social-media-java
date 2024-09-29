@@ -33,4 +33,9 @@ public class FriendController {
     public Boolean isFriend(@Argument Long friendId) {
         return friendService.isFriend(friendId);
     }
+
+    @QueryMapping
+    public Long countFriends(@Argument Long userId) {
+        return friendService.countFriends(userId);
+    }
 }
