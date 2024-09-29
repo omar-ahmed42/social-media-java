@@ -5,8 +5,12 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import com.omarahmed42.socialmedia.dto.PaginationInfo;
 import com.omarahmed42.socialmedia.enums.CommentStatus;
 import com.omarahmed42.socialmedia.enums.PostStatus;
 import com.omarahmed42.socialmedia.exception.CommentNotFoundException;
@@ -24,11 +28,14 @@ import com.omarahmed42.socialmedia.repository.UserRepository;
 import com.omarahmed42.socialmedia.service.BlockingService;
 import com.omarahmed42.socialmedia.service.CommentService;
 import com.omarahmed42.socialmedia.service.FriendService;
+import com.omarahmed42.socialmedia.specification.CommentSpecification;
 import com.omarahmed42.socialmedia.util.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
 
@@ -270,6 +277,59 @@ public class CommentServiceImpl implements CommentService {
             return new ArrayList<>();
 
         return Collections.emptyList();
+    }
+
+    @Override
+    public List<Comment> getCommentsByPostId(Long postId, PaginationInfo pageInfo, Long lastSeenCommentId) {
+        SecurityUtils.throwIfNotAuthenticated();
+        if (postId == null)
+            throw new InvalidInputException("Post id cannot be null");
+
+        Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+        if (isPostOwner(post, authenticatedUserId)) {
+            Specification<Comment> spec = getPublishedCommentsAfterIdByAuthorOrSelfForPost(lastSeenCommentId,
+                    authenticatedUserId, postId);
+
+            PageRequest pageRequest = createPageRequest(lastSeenCommentId, pageInfo,
+                    CommentSpecification.sortDescById());
+            return commentRepository.findAll(spec, pageRequest).getContent();
+        }
+
+        final boolean isFriend = friendService.isFriend(authenticatedUserId, post.getUser().getId());
+        final boolean isBlocked = blockingService.isBlocked(authenticatedUserId, post.getUser().getId());
+        if (!isFriend || isBlocked) {
+            log.error("Illegal access by user with id {} to retrieve comments for post with id {}", authenticatedUserId,
+                    post.getId());
+            /*
+             * For security purposes, we could also return 403, but 404 is preferable to
+             * confuse the malicious actor
+             */
+            throw new PostNotFoundException();
+        }
+
+        Specification<Comment> spec = getPublishedCommentsAfterIdByAuthorOrSelfForPost(lastSeenCommentId,
+                authenticatedUserId, postId);
+
+        return commentRepository.findAll(spec,
+                createPageRequest(lastSeenCommentId, pageInfo, CommentSpecification.sortDescById())).getContent();
+    }
+
+    private Specification<Comment> getPublishedCommentsAfterIdByAuthorOrSelfForPost(Long lastSeenId, Long userId,
+            Long postId) {
+        return CommentSpecification.afterId(lastSeenId)
+                .and(CommentSpecification.hasCommentStatus(CommentStatus.PUBLISHED)
+                        .or(CommentSpecification.hasAuthorId(userId)))
+                .and(CommentSpecification.hasPostId(postId));
+    }
+
+    private PageRequest createPageRequest(Long lastSeenId, PaginationInfo pageInfo, Sort sort) {
+        if (lastSeenId == null) {
+            return PageRequest.of(pageInfo.getPage() - 1, pageInfo.getPageSize(), sort);
+        } else {
+            return PageRequest.ofSize(pageInfo.getPageSize()).withSort(sort);
+        }
     }
 
 }

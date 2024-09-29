@@ -9,6 +9,7 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
+import com.omarahmed42.socialmedia.dto.PaginationInfo;
 import com.omarahmed42.socialmedia.dto.response.ReactionStatistics;
 import com.omarahmed42.socialmedia.model.Comment;
 import com.omarahmed42.socialmedia.model.CommentAttachment;
@@ -66,5 +67,11 @@ public class CommentController {
     @SchemaMapping(typeName = "Comment", field = "reactionStatistics")
     public ReactionStatistics reactionStatistics(Comment comment) {
         return (ReactionStatistics) statisticsService.getStatistics(comment.getId().toString());
+    }
+
+    @QueryMapping
+    public List<Comment> getCommentsByPostId(@Argument Long postId, @Argument Integer page, @Argument Integer pageSize,
+            @Argument Long after) {
+        return commentService.getCommentsByPostId(postId, new PaginationInfo(page, pageSize), after);
     }
 }
