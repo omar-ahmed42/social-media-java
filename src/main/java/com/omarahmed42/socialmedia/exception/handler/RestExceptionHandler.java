@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 @ControllerAdvice
 @Slf4j
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
-
     @Data
     private static class ErrorMessage implements Serializable {
         private String message;
