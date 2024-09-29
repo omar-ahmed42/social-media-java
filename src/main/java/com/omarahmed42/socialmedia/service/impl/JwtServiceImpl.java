@@ -106,7 +106,7 @@ public class JwtServiceImpl implements JwtService {
     public JwtResponse generateTokens(String subject) {
         Token builtAccessToken = Token.builder().subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + Duration.ofMinutes(24L).toMillis())).build();
+                .expiration(new Date(System.currentTimeMillis() + Duration.ofMinutes(1).toMillis())).build();
         Jwt accessToken = generateToken(builtAccessToken);
 
         Token builtRefreshToken = Token.builder().id(UUID.randomUUID().toString())
