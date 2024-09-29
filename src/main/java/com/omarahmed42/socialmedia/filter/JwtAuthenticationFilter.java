@@ -44,7 +44,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        if ("/actuator/prometheus".equals(request.getRequestURI())) {
+        log.info("Request to URL {} with request id {}", request.getRequestURI(), request.getRequestId());
+        if ("/actuator/prometheus".equals(request.getRequestURI()) || isAuthEndpoint(request)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -52,8 +53,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         if (StringUtils.isEmpty(authHeader) || !StringUtils.startsWith(authHeader, "Bearer ")) {
             log.error("No Bearer token present");
-            resolver.resolveException(request, response, null,
-                    new UnauthorizedException("Unauthorized: User unauthenticated"));
+            doFilter(request, response, filterChain);
             return;
         }
 
@@ -82,6 +82,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             resolver.resolveException(request, response, null, new AccessTokenExpiredException());
         }
 
+    }
+
+    private boolean isAuthEndpoint(HttpServletRequest request) {
+        String requestURI = request.getRequestURI();
+        return "/api/v1/auth/login".equals(requestURI) || "/api/v1/auth/login".equals(requestURI)
+                || "/api/v1/auth/signup".equals(requestURI)
+                || "/api/v1/auth/tokens/refresh".equals(requestURI);
     }
 
 }
