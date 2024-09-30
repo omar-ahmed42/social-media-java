@@ -256,14 +256,13 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public Post getPostBy(Comment comment) {
         SecurityUtils.throwIfNotAuthenticated();
-        Post post = postRepository.findById(comment.getId()).orElseThrow(PostNotFoundException::new);
+        Post post = postRepository.findById(comment.getPost().getId()).orElseThrow(PostNotFoundException::new);
         Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
-        Long userId = comment.getUser().getId();
 
         if (isPostOwner(post, authenticatedUserId))
             return post;
 
-        final boolean isFriend = friendService.isFriend(authenticatedUserId, userId);
+        final boolean isFriend = friendService.isFriend(authenticatedUserId, post.getUser().getId());
         final boolean isPublished = post.getPostStatus() == PostStatus.PUBLISHED;
         if (!isPublished || !isFriend)
             throw new ForbiddenPostAccessException(
