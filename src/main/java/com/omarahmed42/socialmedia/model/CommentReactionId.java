@@ -21,4 +21,9 @@ public class CommentReactionId implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "comment_id", nullable = false)
     private Comment comment;
+
+    @Override
+    public String toString() {
+        return user.getId().toString() + ":" + comment.getId().toString();
+    }
 }
