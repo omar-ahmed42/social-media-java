@@ -1,5 +1,7 @@
 package com.omarahmed42.socialmedia.service.impl;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -67,10 +69,7 @@ public class CommentReactionServiceImpl implements CommentReactionService {
             commentReactionId.setUser(userRepository.getReferenceById(authenticatedUserId));
             commentReactionId.setComment(comment);
 
-            CommentReaction commentReaction = new CommentReaction(commentReactionId);
-            commentReaction.setReaction(reactionRepository.getReferenceById(reactionId));
-            commentReaction = commentReactionRepository.save(commentReaction);
-            return commentReaction;
+            return createOrUpdateCommentReaction(commentReactionId, commentId, reactionId);
         }
 
         Long postOwnerId = post.getUser().getId();
@@ -88,15 +87,25 @@ public class CommentReactionServiceImpl implements CommentReactionService {
         commentReactionId.setUser(userRepository.getReferenceById(authenticatedUserId));
         commentReactionId.setComment(comment);
 
+        return createOrUpdateCommentReaction(commentReactionId, commentId, reactionId);
+    }
+
+    private boolean isPostOwner(Post post, Long userId) {
+        Long postOwnerId = post.getUser().getId();
+        return postOwnerId.equals(userId);
+    }
+
+    private CommentReaction createOrUpdateCommentReaction(CommentReactionId commentReactionId, Long commentId,
+            Integer reactionId) {
         CommentReaction retrievedCommentReaction = commentReactionRepository.findById(commentReactionId).orElse(null);
-        final Integer oldReactionId = retrievedCommentReaction == null ? null
+        final Integer oldReactionId = retrievedCommentReaction == null || retrievedCommentReaction.getReaction() == null ? null
                 : retrievedCommentReaction.getReaction().getId();
 
         if (retrievedCommentReaction != null && (oldReactionId == null && reactionId == null))
             return retrievedCommentReaction;
 
         CommentReaction commentReaction = new CommentReaction(commentReactionId);
-        commentReaction.setReaction(reactionRepository.getReferenceById(reactionId));
+        commentReaction.setReaction(reactionId == null ? null : reactionRepository.getReferenceById(reactionId));
         commentReaction = commentReactionRepository.save(commentReaction);
         if (oldReactionId != null) {
             Reaction reaction = reactionRepository.findById(oldReactionId).orElseThrow(
@@ -109,12 +118,26 @@ public class CommentReactionServiceImpl implements CommentReactionService {
                     () -> new ReactionNotFoundException("Reaction with id " + reactionId + " not found"));
             statisticsService.increment(commentId.toString(), reaction.getName());
         }
-
         return commentReaction;
     }
 
-    private boolean isPostOwner(Post post, Long userId) {
-        Long postOwnerId = post.getUser().getId();
-        return postOwnerId.equals(userId);
+    @Override
+    public CommentReaction removeCommentReaction(Long commentId) {
+        return saveCommentReaction(null, commentId);
+    }
+
+    @Override
+    public Reaction getCommentReaction(Long commentId) {
+        SecurityUtils.throwIfNotAuthenticated();
+
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+
+        CommentReactionId commentReactionId = new CommentReactionId();
+
+        commentReactionId.setComment(commentRepository.getReferenceById(commentId));
+        commentReactionId.setUser(userRepository.getReferenceById(authenticatedUserId));
+        Optional<CommentReaction> commentReaction = commentReactionRepository.findById(commentReactionId);
+
+        return commentReaction.isPresent() ? commentReaction.get().getReaction() : null;
     }
 }
