@@ -31,7 +31,7 @@ public class CommentReactionsStatisticsService implements StatisticsService {
     private final ReactionRepository reactionRepository;
     private final RedisTemplate<String, Long> redisTemplate;
 
-    private static final String POST_PREFIX = "comment";
+    private static final String COMMENT_PREFIX = "comment";
     private static final String KEY_DELIMITER = ":";
 
     private Set<String> validActivityTypes;
@@ -67,7 +67,8 @@ public class CommentReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         Long count = ops.get(key);
         if (count == null)
-            count = commentReactionRepository.countByReactionName(activityType);
+            count = commentReactionRepository.countByReactionNameAndCommentReactionId_Comment_id(activityType,
+                    Long.parseLong(commentId));
 
         ops.set(key, count, Duration.ofHours(12));
         return count;
@@ -93,7 +94,8 @@ public class CommentReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         final String key = key(commentId, activityType);
 
-        ops.setIfAbsent(key, commentReactionRepository.countByReactionName(activityType), Duration.ofHours(12));
+        ops.setIfAbsent(key, commentReactionRepository.countByReactionNameAndCommentReactionId_Comment_id(activityType,
+                Long.parseLong(commentId)), Duration.ofHours(12));
         ops.increment(key, value);
     }
 
@@ -111,12 +113,13 @@ public class CommentReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         final String key = key(commentId, activityType);
 
-        ops.setIfAbsent(key, commentReactionRepository.countByReactionName(activityType), Duration.ofHours(12));
+        ops.setIfAbsent(key, commentReactionRepository.countByReactionNameAndCommentReactionId_Comment_id(activityType,
+                Long.parseLong(commentId)), Duration.ofHours(12)); // fix this
         ops.increment(key);
     }
 
     private String key(String commentId, String activityType) {
-        return POST_PREFIX + KEY_DELIMITER + commentId + KEY_DELIMITER + activityType;
+        return COMMENT_PREFIX + KEY_DELIMITER + commentId + KEY_DELIMITER + activityType;
     }
 
     private boolean isValid(String activityType) {
@@ -143,7 +146,8 @@ public class CommentReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         final String key = key(commentId, activityType);
 
-        ops.setIfAbsent(key, commentReactionRepository.countByReactionName(activityType), Duration.ofHours(12));
+        ops.setIfAbsent(key, commentReactionRepository.countByReactionNameAndCommentReactionId_Comment_id(activityType,
+                Long.parseLong(commentId)), Duration.ofHours(12));
         ops.decrement(key, value);
     }
 
@@ -161,7 +165,8 @@ public class CommentReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         final String key = key(commentId, activityType);
 
-        ops.setIfAbsent(key, commentReactionRepository.countByReactionName(activityType), Duration.ofHours(12));
+        ops.setIfAbsent(key, commentReactionRepository.countByReactionNameAndCommentReactionId_Comment_id(activityType,
+                Long.parseLong(commentId)), Duration.ofHours(12));
         ops.decrement(key);
     }
 
@@ -199,7 +204,8 @@ public class CommentReactionsStatisticsService implements StatisticsService {
         ValueOperations<String, Long> ops = redisTemplate.opsForValue();
         Long count = ops.get(key);
         if (count == null)
-            count = commentReactionRepository.countByReactionName(activityType);
+            count = commentReactionRepository.countByReactionNameAndCommentReactionId_Comment_id(activityType,
+                    Long.parseLong(commentId));
 
         ops.set(key, count, Duration.ofHours(12));
         return CompletableFuture.completedFuture(count);
