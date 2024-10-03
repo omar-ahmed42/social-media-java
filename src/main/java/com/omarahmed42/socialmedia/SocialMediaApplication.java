@@ -8,7 +8,7 @@ import org.springframework.data.neo4j.config.EnableNeo4jAuditing;
 
 @SpringBootApplication
 @EnableJpaAuditing
-@EnableCassandraAuditing
+@EnableCassandraAuditing(modifyOnCreate = false)
 @EnableNeo4jAuditing
 public class SocialMediaApplication {
 
