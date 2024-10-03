@@ -11,14 +11,25 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.cassandra.core.query.CassandraPageRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 
+import com.datastax.oss.driver.api.core.cql.PagingState;
+import com.omarahmed42.socialmedia.dto.CursorBasedPagination;
+import com.omarahmed42.socialmedia.dto.SortablePaginationInfo;
 import com.omarahmed42.socialmedia.enums.MessageStatus;
+import com.omarahmed42.socialmedia.enums.SortOrder;
 import com.omarahmed42.socialmedia.exception.ForbiddenConversationAccessException;
 import com.omarahmed42.socialmedia.exception.InvalidInputException;
 import com.omarahmed42.socialmedia.exception.UserNotFoundException;
 import com.omarahmed42.socialmedia.model.Conversation;
 import com.omarahmed42.socialmedia.model.ConversationMember;
+import com.omarahmed42.socialmedia.model.Conversation_;
 import com.omarahmed42.socialmedia.model.Message;
 import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.projection.ConversationDetailsProjection;
@@ -32,8 +43,10 @@ import com.omarahmed42.socialmedia.util.SecurityUtils;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ConversationServiceImpl implements ConversationService {
 
@@ -102,7 +115,8 @@ public class ConversationServiceImpl implements ConversationService {
         List<User> membersIncludingCreator = new LinkedList<>(members);
         membersIncludingCreator.add(userRepository.getReferenceById(creatorId));
 
-        Collection<ConversationMember> conversationMembers = createConversationMembers(membersIncludingCreator, conversation);
+        Collection<ConversationMember> conversationMembers = createConversationMembers(membersIncludingCreator,
+                conversation);
         conversation.addConversationMembers(conversationMembers);
     }
 
@@ -196,7 +210,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public List<Message> getMessagesBy(Conversation conversation) {
+    public List<Message> getMessagesBy(Conversation conversation, CursorBasedPagination paginationInfo) {
         SecurityUtils.throwIfNotAuthenticated();
         Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
         List<ConversationMember> conversationMembers = conversationMemberRepository.findAllByConversation(conversation);
@@ -205,7 +219,29 @@ public class ConversationServiceImpl implements ConversationService {
             throw new ForbiddenConversationAccessException(
                     "Forbidden: cannot access conversation with id " + conversation.getId());
 
-        List<Message> messages = messageRepository.findAllByIdConversationId(conversation.getId());
+        if (paginationInfo == null)
+            paginationInfo = new CursorBasedPagination(15, null);
+
+        if (paginationInfo.getPageSize() == null || paginationInfo.getPageSize() < 1)
+            paginationInfo.setPageSize(15);
+        else if (paginationInfo.getPageSize() > 30)
+            paginationInfo.setPageSize(30);
+
+        PagingState pagingState = paginationInfo.getCursor() == null ? null
+                : PagingState.fromString(paginationInfo.getCursor());
+
+        CassandraPageRequest pageRequest = CassandraPageRequest.of(PageRequest.ofSize(paginationInfo.getPageSize()),
+                pagingState == null ? null : pagingState.getRawPagingState());
+
+        Slice<Message> sliceOfMessages = messageRepository.findAllByIdConversationId(conversation.getId(),
+                pageRequest.withSort(Sort.by(Direction.DESC, "id.messageId")));
+
+        List<Message> messages = sliceOfMessages.getContent();
+        if (sliceOfMessages.hasNext()) {
+            log.info("New cursor: {}",
+                    ((CassandraPageRequest) sliceOfMessages.getPageable()).getPagingState().toString());
+        }
+
         if (messages == null || messages.isEmpty())
             return new ArrayList<>();
 
@@ -238,6 +274,40 @@ public class ConversationServiceImpl implements ConversationService {
         }
 
         return users;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<Conversation> getConversations(SortablePaginationInfo sortablePaginationInfo, Long after) {
+        SecurityUtils.throwIfNotAuthenticated();
+        if (sortablePaginationInfo == null)
+            sortablePaginationInfo = new SortablePaginationInfo(1, 15, SortOrder.DESC);
+        else {
+            if (sortablePaginationInfo.getPage() == null || sortablePaginationInfo.getPage() < 1)
+                sortablePaginationInfo.setPage(1);
+
+            if (sortablePaginationInfo.getPageSize() == null || sortablePaginationInfo.getPageSize() < 1)
+                sortablePaginationInfo.setPageSize(15);
+            else if (sortablePaginationInfo.getPageSize() > 30)
+                sortablePaginationInfo.setPageSize(30);
+
+            if (sortablePaginationInfo.getSort() == null)
+                sortablePaginationInfo.setSort(SortOrder.DESC);
+        }
+
+        PageRequest page = PageRequest.of(sortablePaginationInfo.getPage() - 1, sortablePaginationInfo.getPageSize(),
+                Sort.by(Sort.Direction.fromString(SortOrder.DESC.toString()), Conversation_.ID));
+
+        Page<Conversation> conversations;
+        if (after == null)
+            conversations = conversationRepository
+                    .findAllByConversationMembers_User_id(SecurityUtils.getAuthenticatedUserId(), page);
+        else
+            conversations = conversationRepository
+                    .findAllByConversationMembers_User_idAndIdAfter(SecurityUtils.getAuthenticatedUserId(), after,
+                            page);
+
+        return conversations.getContent();
     }
 
 }

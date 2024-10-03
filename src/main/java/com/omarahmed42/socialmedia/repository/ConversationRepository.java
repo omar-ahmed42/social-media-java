@@ -3,6 +3,8 @@ package com.omarahmed42.socialmedia.repository;
 import java.util.Optional;
 
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -29,4 +31,9 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
                 """, nativeQuery = true)
     Optional<Conversation> findPersonalConversationBy(@Param("first_member_id") Long firstMemberId,
             @Param("second_member_id") Long secondMemberId);
+
+    Page<Conversation> findAllByConversationMembers_User_id(Long userId, PageRequest page);
+
+    Page<Conversation> findAllByConversationMembers_User_idAndIdAfter(Long userId, Long after,
+            PageRequest page);
 }
