@@ -77,7 +77,7 @@ type CommentAttachment {
 type Conversation {
   id: ID
   name: String
-  messages: [Message]
+  messages(pageSize: PositiveInt = 15, cursor: String): [Message]
   users: [User]
   createdAt: DateTime
 }
@@ -88,6 +88,7 @@ type Message {
   user: User
   conversation: Conversation
   createdAt: DateTime
+  lastModifiedAt: DateTime
   attachment: MessageAttachment
 }
 
@@ -113,6 +114,11 @@ input SaveCommentInput {
   postId: ID
   content: String
   commentStatus: String
+}
+
+enum SortOrder {
+  DESC
+  ASC
 }
 
 # Queries
@@ -150,6 +156,13 @@ type Query {
     after: Long
   ): [Comment]
   countCommentsOnPost(postId: ID!): Long
+
+  getConversations(
+    page: PositiveInt = 1
+    pageSize: PositiveInt = 15
+    after: Long
+    sort: SortOrder = DESC
+  ): [Conversation]
 }
 
 # Mutations
