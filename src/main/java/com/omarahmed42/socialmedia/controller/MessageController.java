@@ -14,13 +14,15 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.omarahmed42.socialmedia.dto.response.MessageDto;
+import com.omarahmed42.socialmedia.mapper.MessageMapper;
 import com.omarahmed42.socialmedia.model.Conversation;
-import com.omarahmed42.socialmedia.model.Message;
 import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.service.MessageService;
 import com.omarahmed42.socialmedia.service.UserService;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 
 @Controller
 @RequiredArgsConstructor
@@ -28,44 +30,45 @@ public class MessageController {
 
     private final MessageService messageService;
     private final UserService userService;
+    private final MessageMapper messageMapper;
 
     @PostMapping("/api/v1/conversations/{conversation-id}/message")
-    public @ResponseBody Message sendMessageByConversationId(MultipartFile multipartFile,
+    public @ResponseBody MessageDto sendMessageByConversationId(MultipartFile multipartFile,
             @PathVariable("conversation-id") Long conversationId,
             @RequestPart("content") String content) {
-        return messageService.addMessage(multipartFile, conversationId, content);
+        return messageMapper.toMessageDto(messageService.addMessage(multipartFile, conversationId, content));
     }
 
     @PostMapping("/api/v1/conversations/users/{receiver-id}")
-    public @ResponseBody Message sendMessageByUserId(MultipartFile multipartFile,
+    public @ResponseBody MessageDto sendMessageByUserId(MultipartFile multipartFile,
             @PathVariable("receiver-id") Long receiverId,
             @RequestPart("content") String content) {
-        return messageService.addPersonalMessage(multipartFile, receiverId, content);
+        return messageMapper.toMessageDto(messageService.addPersonalMessage(multipartFile, receiverId, content));
     }
 
     @SubscriptionMapping(value = "messageReceived")
-    public Publisher<Message> receiveMessages() {
-        return messageService.receiveMessagesPublisher();
+    public Publisher<MessageDto> receiveMessages() {
+        return Flux.from(messageService.receiveMessagesPublisher()).map(messageMapper::toMessageDto);
     }
 
     @SubscriptionMapping(value = "messageSent")
-    public Publisher<Message> receiveMessagesFromSpecificConversation(
+    public Publisher<MessageDto> receiveMessagesFromSpecificConversation(
             @Argument Long conversationId) {
-        return messageService.receiveMessagesPublisher(conversationId);
+        return Flux.from(messageService.receiveMessagesPublisher(conversationId)).map(messageMapper::toMessageDto);
     }
 
     @SchemaMapping(typeName = "Message", field = "user")
-    public User user(Message message) {
+    public User user(MessageDto message) {
         return userService.getUser(message.getUserId());
     }
 
     @SchemaMapping(typeName = "Message", field = "conversation")
-    public Conversation conversation(Message message) {
+    public Conversation conversation(MessageDto message) {
         return messageService.getConversationBy(message);
     }
 
     @QueryMapping
-    public List<Message> findMessages(@Argument Long conversationId, @Argument Long after, @Argument Long before) {
-        return messageService.findMessages(conversationId, after, before);
+    public List<MessageDto> findMessages(@Argument Long conversationId, @Argument Long after, @Argument Long before) {
+        return messageMapper.toMessageDtoList(messageService.findMessages(conversationId, after, before));
     }
 }

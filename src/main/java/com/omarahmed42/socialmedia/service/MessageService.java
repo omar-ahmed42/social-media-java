@@ -5,6 +5,7 @@ import java.util.List;
 import org.reactivestreams.Publisher;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.omarahmed42.socialmedia.dto.response.MessageDto;
 import com.omarahmed42.socialmedia.model.Conversation;
 import com.omarahmed42.socialmedia.model.Message;
 
@@ -17,7 +18,7 @@ public interface MessageService {
 
     Publisher<Message> receiveMessagesPublisher(Long conversationId);
 
-    Conversation getConversationBy(Message message);
+    Conversation getConversationBy(MessageDto message);
 
     List<Message> findMessages(Long conversationId, Long after, Long before);
 }

@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.datastax.oss.driver.shaded.guava.common.collect.Sets;
 import com.omarahmed42.socialmedia.dto.event.PublishedMessage;
+import com.omarahmed42.socialmedia.dto.response.MessageDto;
 import com.omarahmed42.socialmedia.enums.MessageStatus;
 import com.omarahmed42.socialmedia.exception.ConversationNotFoundException;
 import com.omarahmed42.socialmedia.exception.ForbiddenConversationAccessException;
@@ -34,7 +35,8 @@ import com.omarahmed42.socialmedia.mapper.MessageMapper;
 import com.omarahmed42.socialmedia.model.Conversation;
 import com.omarahmed42.socialmedia.model.ConversationMember;
 import com.omarahmed42.socialmedia.model.Message;
-import com.omarahmed42.socialmedia.model.MessageId;
+import com.omarahmed42.socialmedia.model.MessagePK;
+import com.omarahmed42.socialmedia.model.MessagePK_;
 import com.omarahmed42.socialmedia.projection.ConversationDetailsProjection;
 import com.omarahmed42.socialmedia.repository.ConversationRepository;
 import com.omarahmed42.socialmedia.repository.MessageRepository;
@@ -114,12 +116,11 @@ public class MessageServiceImpl implements MessageService {
             message.setAttachmentUrl(attachmentUrl);
         }
 
-        message.setId(new MessageId(generateId(), conversationId));
-        // message.setMessageId(generateId());
+        message.setId(new MessagePK(generateId(), conversationId));
         message.setMessageStatus(status);
         message.setUserId(userId);
         message.setContent(content);
-        // message.setConversationId(conversationId);
+        message.markNew();
         message = messageRepository.save(message);
 
         return message;
@@ -261,7 +262,7 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     @Transactional(readOnly = true)
-    public Conversation getConversationBy(Message message) {
+    public Conversation getConversationBy(MessageDto message) {
         SecurityUtils.throwIfNotAuthenticated();
         Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
         Long conversationId = message.getConversationId();
@@ -274,7 +275,7 @@ public class MessageServiceImpl implements MessageService {
         }
 
         throw new ForbiddenConversationAccessException(
-                "Forbidden: cannot access conversation using message with id" + message.getMessageId());
+                "Forbidden: cannot access conversation using message with id" + message.getId());
     }
 
     @Override
@@ -282,11 +283,11 @@ public class MessageServiceImpl implements MessageService {
         List<Message> messages;
         Pageable pageable;
         if (after != null) {
-            pageable = PageRequest.of(0, 15, Sort.by(Direction.ASC, "id.messageId"));
+            pageable = PageRequest.of(0, 15, Sort.by(Direction.ASC, MessagePK_.MESSAGE_ID));
             messages = messageRepository.findAllByIdConversationIdAndIdMessageIdGreaterThan(conversationId, after,
                     pageable);
         } else if (before != null) {
-            pageable = PageRequest.of(0, 15, Sort.by(Direction.DESC, "id.messageId"));
+            pageable = PageRequest.of(0, 15, Sort.by(Direction.DESC, MessagePK_.MESSAGE_ID));
             messages = messageRepository.findAllByIdConversationIdAndIdMessageIdLessThan(conversationId, before,
                     pageable);
         } else {
