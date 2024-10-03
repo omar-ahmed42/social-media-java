@@ -3,8 +3,10 @@ package com.omarahmed42.socialmedia.dto;
 import java.io.Serializable;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class PaginationInfo implements Serializable {
 
     private Integer page;
