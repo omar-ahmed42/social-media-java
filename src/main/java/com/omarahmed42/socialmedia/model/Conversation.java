@@ -8,6 +8,7 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.GenericGenerator;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.omarahmed42.socialmedia.generator.SnowflakeUIDGenerator;
 
 import jakarta.persistence.CascadeType;
@@ -45,6 +46,7 @@ public class Conversation extends Auditable {
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "conversation")
     @Fetch(FetchMode.SUBSELECT)
+    @JsonManagedReference
     private Set<ConversationMember> conversationMembers = new HashSet<>();
 
     public Conversation(String name, Boolean isGroup) {

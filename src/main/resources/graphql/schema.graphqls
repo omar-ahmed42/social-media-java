@@ -163,6 +163,7 @@ type Query {
     after: Long
     sort: SortOrder = DESC
   ): [Conversation]
+  getConversation(id: ID!): Conversation
 }
 
 # Mutations

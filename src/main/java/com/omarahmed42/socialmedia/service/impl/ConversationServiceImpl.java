@@ -24,6 +24,7 @@ import com.omarahmed42.socialmedia.dto.CursorBasedPagination;
 import com.omarahmed42.socialmedia.dto.SortablePaginationInfo;
 import com.omarahmed42.socialmedia.enums.MessageStatus;
 import com.omarahmed42.socialmedia.enums.SortOrder;
+import com.omarahmed42.socialmedia.exception.ConversationNotFoundException;
 import com.omarahmed42.socialmedia.exception.ForbiddenConversationAccessException;
 import com.omarahmed42.socialmedia.exception.InvalidInputException;
 import com.omarahmed42.socialmedia.exception.UserNotFoundException;
@@ -308,6 +309,25 @@ public class ConversationServiceImpl implements ConversationService {
                             page);
 
         return conversations.getContent();
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public Conversation getConversation(Long conversationId) {
+        log.info("Conversation ID: {}", conversationId);
+        if (conversationId == null || conversationId <= 0L)
+            throw new InvalidInputException("Conversation ID cannot be empty");
+
+        SecurityUtils.throwIfNotAuthenticated();
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+        List<ConversationMember> conversationMembers = conversationMemberRepository
+                .findAllByConversation_id(conversationId);
+
+        if (!isMemberOf(authenticatedUserId, conversationMembers))
+            throw new ForbiddenConversationAccessException(
+                    "Forbidden: cannot access conversation with id " + conversationId);
+        return conversationRepository.findById(conversationId)
+                .orElseThrow(ConversationNotFoundException::new);
     }
 
 }

@@ -20,4 +20,6 @@ public interface ConversationService {
     List<Message> getMessagesBy(Conversation conversation, CursorBasedPagination paginationInfo);
 
     List<Conversation> getConversations(SortablePaginationInfo sortablePaginationInfo, Long after);
+
+    Conversation getConversation(Long conversationId);
 }

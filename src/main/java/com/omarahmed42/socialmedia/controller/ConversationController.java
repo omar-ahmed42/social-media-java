@@ -54,4 +54,9 @@ public class ConversationController {
             @Argument SortOrder sort) {
         return conversationService.getConversations(new SortablePaginationInfo(page, pageSize, sort), after);
     }
+
+    @QueryMapping
+    public Conversation getConversation(@Argument Long id) {
+        return conversationService.getConversation(id);
+    }
 }

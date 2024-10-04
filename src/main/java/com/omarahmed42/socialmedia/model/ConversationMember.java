@@ -2,6 +2,7 @@ package com.omarahmed42.socialmedia.model;
 
 import org.hibernate.annotations.GenericGenerator;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.omarahmed42.socialmedia.generator.SnowflakeUIDGenerator;
 
 import jakarta.persistence.Column;
@@ -30,6 +31,7 @@ public class ConversationMember extends Auditable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id", nullable = false)
+    @JsonBackReference
     private Conversation conversation;
 
     @ManyToOne(fetch = FetchType.LAZY)
