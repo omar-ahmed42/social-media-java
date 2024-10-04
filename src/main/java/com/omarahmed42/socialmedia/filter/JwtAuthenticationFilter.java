@@ -61,7 +61,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             final String userEmail = jwtService.extractUserName(jwt);
-            if (StringUtils.isNotEmpty(userEmail) && SecurityContextHolder.getContext().getAuthentication() == null) {
+            final Long userId = jwtService.extractSubject(jwt);
+            if (userId != null && userId > 0 && StringUtils.isNotEmpty(userEmail)
+                    && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
                 if (jwtService.isTokenValid(jwt)) {
                     SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -86,7 +88,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isAuthEndpoint(HttpServletRequest request) {
         String requestURI = request.getRequestURI();
-        return "/api/v1/auth/login".equals(requestURI) || "/api/v1/auth/login".equals(requestURI)
+        return "/api/v1/auth/login".equals(requestURI)
                 || "/api/v1/auth/signup".equals(requestURI)
                 || "/api/v1/auth/tokens/refresh".equals(requestURI);
     }

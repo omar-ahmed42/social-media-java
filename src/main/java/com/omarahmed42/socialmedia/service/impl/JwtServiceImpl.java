@@ -27,12 +27,19 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JwtServiceImpl implements JwtService {
 
+    private static final String USERNAME_CLAIM = "username";
     @Value(value = "${token.signing.key}")
     private String jwtSigningKey;
 
     @Override
+    public Long extractSubject(String token) {
+        String subject = extractClaim(token, Claims::getSubject);
+        return subject == null ? null : Long.parseLong(subject);
+    }
+
+    @Override
     public String extractUserName(String token) {
-        return extractClaim(token, Claims::getSubject);
+        return (String) extractClaim(token, t -> t.get(USERNAME_CLAIM));
     }
 
     @Override
@@ -75,6 +82,8 @@ public class JwtServiceImpl implements JwtService {
             jwtBuilder.issuer(token.getIssuer());
         if (nonEmpty(token.getSubject()))
             jwtBuilder.subject(token.getSubject());
+        if (nonEmpty(token.getUsername()))
+            jwtBuilder.claim(USERNAME_CLAIM, token.getUsername());
         if (nonEmpty(token.getAudience()))
             jwtBuilder.audience().add(token.getAudience());
         if (nonEmpty(token.getExpiration()))
@@ -85,6 +94,8 @@ public class JwtServiceImpl implements JwtService {
             jwtBuilder.notBefore(token.getNotBefore());
         if (nonEmpty(token.getExtra()))
             jwtBuilder.claims(token.getExtra());
+
+        jwtBuilder.header().type("JWT");
 
         return new Jwt(jwtBuilder.signWith(getSigningKey()).compact());
     }
@@ -98,20 +109,21 @@ public class JwtServiceImpl implements JwtService {
         Claims payload = extractAllClaims(jwt);
 
         return Token.builder().id(payload.getId()).issuer(payload.getIssuer()).subject(payload.getSubject())
+                .username(payload.get(USERNAME_CLAIM, String.class))
                 .audience(StringUtils.join(payload.getAudience(), ", ")).expiration(payload.getExpiration())
                 .notBefore(payload.getNotBefore()).issuedAt(payload.getIssuedAt()).build();
     }
 
     @Override
-    public JwtResponse generateTokens(String subject) {
-        Token builtAccessToken = Token.builder().subject(subject)
+    public JwtResponse generateTokens(String subject, String username) {
+        Token builtAccessToken = Token.builder().subject(subject).username(username)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + Duration.ofMinutes(1).toMillis())).build();
+                .expiration(new Date(System.currentTimeMillis() + Duration.ofMinutes(525_600).toMillis())).build();
         Jwt accessToken = generateToken(builtAccessToken);
 
         Token builtRefreshToken = Token.builder().id(UUID.randomUUID().toString())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + Duration.ofDays(15L).toMillis())).build();
+                .expiration(new Date(System.currentTimeMillis() + Duration.ofDays(365L).toMillis())).build();
 
         Jwt refreshToken = generateToken(builtRefreshToken);
 

@@ -56,7 +56,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
 
-        JwtResponse jwtResponse = jwtService.generateTokens(userDetails.getUsername());
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        JwtResponse jwtResponse = jwtService.generateTokens(String.valueOf(customUserDetails.getUserId()),
+                userDetails.getUsername());
         refreshTokenService.storeToken(jwtService.parse(jwtResponse.getRefreshToken()),
                 ((CustomUserDetails) userDetails).getUserId());
 

@@ -14,22 +14,25 @@ import lombok.Getter;
 public class Token implements Serializable {
     @JsonProperty("jti")
     private String id;
-    
+
     @JsonProperty("iss")
     private String issuer;
-    
+
     @JsonProperty("sub")
     private String subject;
-    
+
+    @JsonProperty("username")
+    private String username;
+
     @JsonProperty("aud")
     private String audience;
-    
+
     @JsonProperty("exp")
     private Date expiration;
-    
+
     @JsonProperty("nbf")
     private Date notBefore;
-    
+
     @JsonProperty("iat")
     private Date issuedAt;
 

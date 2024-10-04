@@ -86,8 +86,9 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     private JwtResponse rotate(RefreshToken refreshToken) {
-        JwtResponse jwtResponse = jwtService.generateTokens(refreshToken.getUser().getEmail());
-        transactionTemplate.executeWithoutResult((status) -> {
+        JwtResponse jwtResponse = jwtService.generateTokens(String.valueOf(refreshToken.getUser().getId()),
+                refreshToken.getUser().getEmail());
+        transactionTemplate.executeWithoutResult(status -> {
             refreshToken.setStatus(TokenStatus.CONSUMED);
             storeToken(jwtService.parse(jwtResponse.getRefreshToken()), refreshToken.getUser().getId());
             refreshTokenRepository.save(refreshToken);
