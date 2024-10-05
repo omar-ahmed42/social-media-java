@@ -49,6 +49,7 @@ import com.omarahmed42.socialmedia.util.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitResult;
+import reactor.util.concurrent.Queues;
 
 @Service
 @Slf4j
@@ -78,7 +79,7 @@ public class MessageServiceImpl implements MessageService {
         this.conversationService = conversationService;
         this.messageRepository = messageRepository;
         this.kafkaTemplate = kafkaTemplate;
-        this.sink = Sinks.many().multicast().onBackpressureBuffer();
+        this.sink = Sinks.many().multicast().onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
         this.messageMapper = messageMapper;
         this.fileService = fileService;
         this.idGeneratorService = idGeneratorService;
