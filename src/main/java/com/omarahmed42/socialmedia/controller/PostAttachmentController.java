@@ -22,7 +22,7 @@ public class PostAttachmentController {
     private final PostAttachmentService postAttachmentService;
 
     @PostMapping("/api/v1/posts/{post-id}/attachments")
-    public ResponseEntity<PostAttachment> addPostAttachment(MultipartFile multipartFile,
+    public ResponseEntity<Void> addPostAttachment(MultipartFile multipartFile,
             @PathVariable("post-id") Long postId) {
         Long id = postAttachmentService.savePostAttachment(multipartFile, postId);
         return ResponseEntity.created(URI.create("/api/v1/posts/" + postId + "/attachments/" + id)).build();
