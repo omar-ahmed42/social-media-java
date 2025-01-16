@@ -15,6 +15,7 @@ public class CorsConfiguration {
         corsConfiguration.setAllowedHeaders(List.of("*"));
         corsConfiguration.setAllowedMethods(List.of("*"));
         corsConfiguration.setAllowedOrigins(List.of("*"));
+        corsConfiguration.setExposedHeaders(List.of("Location"));
         corsConfiguration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
