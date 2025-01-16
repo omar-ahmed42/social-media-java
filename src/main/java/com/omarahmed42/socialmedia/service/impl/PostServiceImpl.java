@@ -24,6 +24,7 @@ import com.omarahmed42.socialmedia.model.PostAttachment;
 import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.model.cache.Newsfeed;
 import com.omarahmed42.socialmedia.projection.PostInputProjection;
+import com.omarahmed42.socialmedia.repository.PostAttachmentRepository;
 import com.omarahmed42.socialmedia.repository.PostRepository;
 import com.omarahmed42.socialmedia.repository.UserRepository;
 import com.omarahmed42.socialmedia.service.FriendService;
@@ -39,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
+    private final PostAttachmentRepository postAttachmentsRepository;
     private final UserRepository userRepository;
     private final FriendService friendService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
@@ -174,7 +176,8 @@ public class PostServiceImpl implements PostService {
     }
 
     private void throwIfBlankContentAndNoAttachments(String content, Post post) {
-        List<PostAttachment> postAttachments = post.getPostAttachments();
+        List<PostAttachment> postAttachments = postAttachmentsRepository.findAllByPostAttachmentIdPost(post);
+        // List<PostAttachment> postAttachments = post.getPostAttachments();
         boolean isEmptyPost = StringUtils.isBlank(content) && (postAttachments == null || postAttachments.isEmpty());
         if (isEmptyPost)
             throw new InvalidInputException("Post must at least have non-blank content or uploaded attachments");
