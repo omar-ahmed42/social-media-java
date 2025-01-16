@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.hibernate.annotations.GenericGenerator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.omarahmed42.socialmedia.enums.PostStatus;
 import com.omarahmed42.socialmedia.generator.SnowflakeUIDGenerator;
 
@@ -46,6 +47,7 @@ public class Post extends Auditable {
     private User user;
 
     @OneToMany(mappedBy = "postAttachmentId.post")
+    @JsonIgnore
     private List<PostAttachment> postAttachments = new ArrayList<>();
 
     public Post(String content, PostStatus postStatus, User user) {
