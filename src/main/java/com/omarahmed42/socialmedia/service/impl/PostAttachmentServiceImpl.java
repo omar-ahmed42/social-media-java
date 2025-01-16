@@ -3,6 +3,7 @@ package com.omarahmed42.socialmedia.service.impl;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.omarahmed42.socialmedia.enums.AttachmentStatus;
@@ -176,5 +178,11 @@ public class PostAttachmentServiceImpl implements PostAttachmentService {
     private boolean isPostOwner(Post post, Long userId) {
         Long postOwnerId = post.getUser().getId();
         return postOwnerId.equals(userId);
+    }
+
+    @Override
+    @Transactional
+    public List<PostAttachment> findPostAttachmentsByPost(Post post) {
+        return postAttachmentRepository.queryAllByPostAttachmentIdPost(post);
     }
 }

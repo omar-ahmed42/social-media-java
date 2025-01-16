@@ -10,12 +10,15 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
 import com.omarahmed42.socialmedia.dto.PaginationInfo;
+import com.omarahmed42.socialmedia.dto.projection.AttachmentDto;
 import com.omarahmed42.socialmedia.dto.response.ReactionStatistics;
 import com.omarahmed42.socialmedia.model.Comment;
 import com.omarahmed42.socialmedia.model.Post;
 import com.omarahmed42.socialmedia.model.PostAttachment;
+import com.omarahmed42.socialmedia.model.PostAttachmentId;
 import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.projection.PostInputProjection;
+import com.omarahmed42.socialmedia.service.PostAttachmentService;
 import com.omarahmed42.socialmedia.service.PostService;
 import com.omarahmed42.socialmedia.service.StatisticsService;
 import com.omarahmed42.socialmedia.service.UserService;
@@ -26,14 +29,16 @@ import graphql.GraphQLContext;
 public class PostController {
 
     private final PostService postService;
+    private final PostAttachmentService postAttachmentService;
     private final UserService userService;
     private final StatisticsService statisticsService;
 
     public PostController(PostService postService, UserService userService,
-            @Qualifier("postReactionsStatisticsService") StatisticsService statisticsService) {
+            @Qualifier("postReactionsStatisticsService") StatisticsService statisticsService, PostAttachmentService postAttachmentService) {
         this.postService = postService;
         this.userService = userService;
         this.statisticsService = statisticsService;
+        this.postAttachmentService = postAttachmentService;
     }
 
     @QueryMapping
@@ -67,8 +72,9 @@ public class PostController {
     }
 
     @SchemaMapping(typeName = "Post", field = "postAttachments")
-    public List<PostAttachment> postAttachments(Post post) {
-        return post.getPostAttachments();
+    public List<AttachmentDto> postAttachments(Post post) {
+        List<PostAttachment> postAttachments = postAttachmentService.findPostAttachmentsByPost(post);
+        return postAttachments.stream().map(PostAttachment::getPostAttachmentId).map(PostAttachmentId::getAttachment).map(attachment -> new AttachmentDto(attachment.getId(), attachment.getUrl())).toList();
     }
 
     @SchemaMapping(typeName = "Post", field = "reactionStatistics")
