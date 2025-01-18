@@ -15,6 +15,7 @@ import com.omarahmed42.socialmedia.dto.response.JwtResponse;
 import com.omarahmed42.socialmedia.service.AuthenticationService;
 import com.omarahmed42.socialmedia.service.RefreshTokenService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,7 +29,7 @@ public class AuthenticationController {
     private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<JwtResponse> login(@RequestBody @Valid LoginRequest loginRequest) {
         try {
             JwtResponse response = authenticationService.login(loginRequest);
             return ResponseEntity.ok(response);
@@ -44,7 +45,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<Void> signUp(@RequestBody SignupRequest signupRequest) {
+    public ResponseEntity<Void> signUp(@RequestBody @Valid SignupRequest signupRequest) {
         Long userId = authenticationService.signUp(signupRequest);
         return ResponseEntity.created(URI.create("/v1/api/users/" + userId)).build();
     }
