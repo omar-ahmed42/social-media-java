@@ -1,12 +1,18 @@
 package com.omarahmed42.socialmedia.exception.handler;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.datastax.oss.driver.api.core.servererrors.AlreadyExistsException;
@@ -17,9 +23,11 @@ import com.omarahmed42.socialmedia.exception.NotFoundException;
 import com.omarahmed42.socialmedia.exception.UnauthorizedException;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-@ControllerAdvice
+@RestControllerAdvice
 @Slf4j
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @Data
@@ -29,6 +37,19 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
         public ErrorMessage(String message) {
             this.message = message;
+        }
+    }
+
+    @Getter
+    @Setter
+    private static class FieldErrorMessage extends ErrorMessage {
+        private String fieldName;
+        private String code;
+
+        public FieldErrorMessage(String message, String fieldName, String code) {
+            super(message);
+            this.fieldName = fieldName;
+            this.code = code;
         }
     }
 
@@ -73,6 +94,17 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ErrorMessage> handleBadRequestException(BadRequestException badRequestException) {
         logError(badRequestException);
         return ResponseEntity.badRequest().body(new ErrorMessage(badRequestException.getMessage()));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        logError(ex);
+        List<ErrorMessage> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(err -> new FieldErrorMessage(err.getDefaultMessage(), err.getField(), err.getCode()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.badRequest().body(errors);
     }
 
     @ExceptionHandler(RuntimeException.class)
