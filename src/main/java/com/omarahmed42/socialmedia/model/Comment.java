@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.hibernate.annotations.GenericGenerator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.omarahmed42.socialmedia.enums.CommentStatus;
 import com.omarahmed42.socialmedia.generator.SnowflakeUIDGenerator;
 
@@ -24,7 +25,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Data
-@EqualsAndHashCode (callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 @Table
 @Entity
 @NoArgsConstructor
@@ -52,5 +53,6 @@ public class Comment extends Auditable {
     private User user;
 
     @OneToMany(mappedBy = "commentAttachmentId.comment")
+    @JsonIgnore
     private List<CommentAttachment> commentAttachments = new ArrayList<>();
 }
