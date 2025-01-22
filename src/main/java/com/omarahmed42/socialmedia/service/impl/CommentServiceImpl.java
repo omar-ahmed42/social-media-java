@@ -22,6 +22,7 @@ import com.omarahmed42.socialmedia.model.Comment;
 import com.omarahmed42.socialmedia.model.CommentAttachment;
 import com.omarahmed42.socialmedia.model.Post;
 import com.omarahmed42.socialmedia.projection.CommentInputProjection;
+import com.omarahmed42.socialmedia.repository.CommentAttachmentRepository;
 import com.omarahmed42.socialmedia.repository.CommentRepository;
 import com.omarahmed42.socialmedia.repository.PostRepository;
 import com.omarahmed42.socialmedia.repository.UserRepository;
@@ -41,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
+    private final CommentAttachmentRepository commentAttachmentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
 
@@ -194,7 +196,8 @@ public class CommentServiceImpl implements CommentService {
             return comment;
         }
 
-        List<CommentAttachment> commentAttachments = comment.getCommentAttachments();
+        List<CommentAttachment> commentAttachments = commentAttachmentRepository
+                .findAllByCommentAttachmentIdComment(comment);
         if (commentAttachments == null || commentAttachments.isEmpty()) {
             throw new InvalidInputException("Comment must at least have non-blank content or uploaded attachments");
         }
