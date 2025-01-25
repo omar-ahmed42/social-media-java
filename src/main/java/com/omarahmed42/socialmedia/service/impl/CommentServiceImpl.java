@@ -279,7 +279,8 @@ public class CommentServiceImpl implements CommentService {
         if (comment == null)
             return new ArrayList<>();
 
-        return Collections.emptyList();
+        return commentAttachmentRepository
+                .findAllByCommentAttachmentIdComment(comment);
     }
 
     @Override
