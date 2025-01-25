@@ -10,9 +10,11 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
 import com.omarahmed42.socialmedia.dto.PaginationInfo;
+import com.omarahmed42.socialmedia.dto.projection.AttachmentDto;
 import com.omarahmed42.socialmedia.dto.response.ReactionStatistics;
 import com.omarahmed42.socialmedia.model.Comment;
 import com.omarahmed42.socialmedia.model.CommentAttachment;
+import com.omarahmed42.socialmedia.model.CommentAttachmentId;
 import com.omarahmed42.socialmedia.model.Post;
 import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.projection.CommentInputProjection;
@@ -60,8 +62,11 @@ public class CommentController {
     }
 
     @SchemaMapping(typeName = "Comment", field = "commentAttachments")
-    public List<CommentAttachment> commentAttachments(Comment comment) {
-        return commentService.getCommentAttachmentsBy(comment);
+    public List<AttachmentDto> commentAttachments(Comment comment) {
+        List<CommentAttachment> attachments = commentService.getCommentAttachmentsBy(comment);
+        return attachments.stream().map(CommentAttachment::getCommentAttachmentId)
+                .map(CommentAttachmentId::getAttachment)
+                .map(attachment -> new AttachmentDto(attachment.getId(), attachment.getUrl())).toList();
     }
 
     @SchemaMapping(typeName = "Comment", field = "reactionStatistics")
