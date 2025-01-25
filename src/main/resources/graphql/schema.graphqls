@@ -29,6 +29,7 @@ type Post {
   postAttachments: [PostAttachment]
   comments: [Comment]
   createdAt: DateTime
+  postStatus: String
   user: User
   reactionStatistics: ReactionStatistics
 }
@@ -39,6 +40,7 @@ type Comment {
   commentAttachments: [CommentAttachment]
   post: Post
   createdAt: DateTime
+  commentStatus: String
   user: User
   reactionStatistics: ReactionStatistics
 }
