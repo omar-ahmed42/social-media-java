@@ -22,7 +22,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     @Query(value = """
-        SELECT new com.omarahmed42.socialmedia.dto.projection.UserPersonalInfoDto(u.id, u.firstName, u.lastName, u.username, u.dateOfBirth,
+        SELECT new com.omarahmed42.socialmedia.dto.projection.UserPersonalInfoDto(u.id, u.firstName, u.lastName, u.bio, u.username, u.dateOfBirth,
          u.email, u.createdAt, new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(avatar.id, avatar.url), 
          new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(coverPicture.id, coverPicture.url)
         ) FROM User u 
@@ -35,7 +35,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<UserPersonalInfoDto> findUserPersonalInfoById(@Param("userId") Long userId);
 
     @Query(value = """
-        SELECT new com.omarahmed42.socialmedia.dto.projection.UserPublicInfoDto(u.id, u.firstName, u.lastName, u.username,
+        SELECT new com.omarahmed42.socialmedia.dto.projection.UserPublicInfoDto(u.id, u.firstName, u.lastName, u.bio, u.username,
         u.dateOfBirth, u.createdAt, 
         new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(avatar.id, avatar.url),
         new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(coverPicture.id, coverPicture.url)) 

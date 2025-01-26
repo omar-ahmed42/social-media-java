@@ -10,6 +10,7 @@ type User {
   lastName: String
   username: String
   email: String
+  bio: String
   dateOfBirth: Date
   createdAt: DateTime
   roles: [Role]

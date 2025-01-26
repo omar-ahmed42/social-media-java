@@ -48,6 +48,9 @@ public class User extends Auditable {
     @Column(name = "password", length = 128, nullable = false)
     private String password;
 
+    @Column(name = "bio", length = 160)
+    private String bio;
+
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
