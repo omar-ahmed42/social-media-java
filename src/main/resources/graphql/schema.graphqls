@@ -107,6 +107,12 @@ input SavePostInput {
   postStatus: String
 }
 
+input UserUpdateInput {
+  firstName: String!
+  lastName: String!
+  bio: String
+}
+
 type Attachment {
   id: ID
   url: String
@@ -179,6 +185,7 @@ type Mutation {
     dateOfBirth: Date!
     roles: [String]!
   ): User
+  updateUser(userInput: UserUpdateInput): User
   deleteUser(id: ID!): Boolean
   blockUser(userToBeBlockedId: ID!): Boolean
   unblockUser(userToBeUnBlockedId: ID!): Boolean

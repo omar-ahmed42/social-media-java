@@ -20,6 +20,7 @@ import com.omarahmed42.socialmedia.dto.PaginationInfo;
 import com.omarahmed42.socialmedia.model.Post;
 import com.omarahmed42.socialmedia.model.Role;
 import com.omarahmed42.socialmedia.model.User;
+import com.omarahmed42.socialmedia.projection.UserUpdateInputProjection;
 import com.omarahmed42.socialmedia.model.Attachment;
 import com.omarahmed42.socialmedia.service.PostService;
 import com.omarahmed42.socialmedia.service.UserService;
@@ -38,6 +39,11 @@ public class UserController {
             @Argument String password, @Argument LocalDate dateOfBirth,
             @Argument List<String> roles) {
         return userService.addUser(firstName, lastName, username, email, password, dateOfBirth, true, true, new HashSet<>(roles));
+    }
+
+    @MutationMapping
+    public User updateUser(@Argument UserUpdateInputProjection userInput) {
+        return userService.updateUser(userInput);
     }
 
     @QueryMapping

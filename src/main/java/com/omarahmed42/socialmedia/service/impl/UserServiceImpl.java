@@ -8,10 +8,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.Uuid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,6 +25,7 @@ import com.omarahmed42.socialmedia.enums.AttachmentStatus;
 import com.omarahmed42.socialmedia.enums.AttachmentType;
 import com.omarahmed42.socialmedia.exception.AttachmentNotFoundException;
 import com.omarahmed42.socialmedia.exception.ForbiddenException;
+import com.omarahmed42.socialmedia.exception.InvalidInputException;
 import com.omarahmed42.socialmedia.exception.UnsupportedMediaExtensionException;
 import com.omarahmed42.socialmedia.exception.UserNotFoundException;
 import com.omarahmed42.socialmedia.mapper.UserMapper;
@@ -31,6 +33,7 @@ import com.omarahmed42.socialmedia.model.Attachment;
 import com.omarahmed42.socialmedia.model.Role;
 import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.model.graph.UserNode;
+import com.omarahmed42.socialmedia.projection.UserUpdateInputProjection;
 import com.omarahmed42.socialmedia.repository.AttachmentRepository;
 import com.omarahmed42.socialmedia.repository.RoleRepository;
 import com.omarahmed42.socialmedia.repository.UserRepository;
@@ -69,7 +72,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public User addUser(String firstName, String lastName, String username, String email, String password, LocalDate dateOfBirth,
+    public User addUser(String firstName, String lastName, String username, String email, String password,
+            LocalDate dateOfBirth,
             boolean enabled, boolean active, Set<String> rolesNames) {
         User user = new User();
         user.setFirstName(firstName);
@@ -87,6 +91,33 @@ public class UserServiceImpl implements UserService {
         user = userRepository.save(user);
         kafkaTemplate.send("graph-user-creation", user.getId());
 
+        return user;
+    }
+
+    @Override
+    @Transactional
+    public User updateUser(UserUpdateInputProjection userInput) {
+        log.info("Updating user");
+        SecurityUtils.throwIfNotAuthenticated();
+
+        Long authUserId = SecurityUtils.getAuthenticatedUserId();
+
+        if (userInput == null)
+            throw new InvalidInputException("User fields cannot be empty");
+
+        User user = userRepository.findById(authUserId).orElseThrow(UserNotFoundException::new);
+        if (StringUtils.length(userInput.getFirstName()) < 1 || StringUtils.length(userInput.getFirstName()) > 50)
+            throw new InvalidInputException("First name length must be between 1 and 50 characters.");
+        if (StringUtils.length(userInput.getLastName()) < 1 || StringUtils.length(userInput.getLastName()) > 50)
+            throw new InvalidInputException("Last name length must be between 1 and 50 characters.");
+        if (StringUtils.length(userInput.getBio()) > 160)
+            throw new InvalidInputException("Bio length must be between 0 and 160 characters.");
+
+        user.setFirstName(userInput.getFirstName());
+        user.setLastName(userInput.getLastName());
+        user.setBio(userInput.getBio());
+
+        user = userRepository.save(user);
         return user;
     }
 
@@ -166,7 +197,8 @@ public class UserServiceImpl implements UserService {
         String filename = Uuid.randomUuid().toString() + AttachmentUtils.EXTENSION_SEPARATOR
                 + fileExtension;
 
-        String fileUrl = userPublicStoragePath + File.separator + authenticatedUserId.toString() + File.separator + filename;
+        String fileUrl = userPublicStoragePath + File.separator + authenticatedUserId.toString() + File.separator
+                + filename;
 
         Attachment attachment = new Attachment();
         attachment.setExtension(fileExtension);
@@ -250,7 +282,8 @@ public class UserServiceImpl implements UserService {
         String filename = Uuid.randomUuid().toString() + AttachmentUtils.EXTENSION_SEPARATOR
                 + fileExtension;
 
-        String fileUrl = userPublicStoragePath + File.separator + authenticatedUserId.toString() + File.separator + filename;
+        String fileUrl = userPublicStoragePath + File.separator + authenticatedUserId.toString() + File.separator
+                + filename;
 
         Attachment attachment = new Attachment();
         attachment.setExtension(fileExtension);
@@ -288,7 +321,7 @@ public class UserServiceImpl implements UserService {
                 attachmentRepository.delete(oldCoverPicture);
             return userRepository.save(user);
         });
-        
+
     }
 
 }
