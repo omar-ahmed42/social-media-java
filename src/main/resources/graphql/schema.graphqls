@@ -161,7 +161,7 @@ type Query {
   findUserPersonalInfo(userId: ID!): User
   findUserPublicInfo(userId: ID!): User
   isFriend(friendId: ID!): Boolean
-  findPendingFriendRequestByFriendId(receiverId: ID): FriendRequest
+  findPendingFriendRequestByFriendId(friendId: ID): FriendRequest
   countFriends(userId: ID!): Long
   getCommentReaction(commentId: ID!): Reaction
   getCommentsByPostId(
