@@ -103,13 +103,13 @@ public class FriendServiceImpl implements FriendService {
         UserNode user = userNodeRepository.findById(userId).orElseThrow(UserNotFoundException::new);
         UserNode friend = userNodeRepository.findById(friendId).orElseThrow(UserNotFoundException::new);
 
-        boolean isRemovedFromUserList = user.getFriends().removeIf(u -> u.getUserId().equals(friendId));
+        boolean isRemovedFromUserList = user.getFriends().removeIf(u -> u.getUserId().equals(friend.getUserId()));
         if (isRemovedFromUserList) {
             userNodeRepository.save(user);
             return true;
         }
 
-        boolean isRemovedFromFriendList = friend.getFriends().removeIf(u -> u.getUserId().equals(userId));
+        boolean isRemovedFromFriendList = friend.getFriends().removeIf(u -> u.getUserId().equals(user.getUserId()));
         if (isRemovedFromFriendList) {
             userNodeRepository.save(friend);
             return true;

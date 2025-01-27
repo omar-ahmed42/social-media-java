@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
@@ -33,6 +34,9 @@ public class UserNode {
     @LastModifiedDate
     @Column(name = "last_modified_at", insertable = false)
     private LocalDateTime lastModifiedAt;
+
+    @Version
+    private Long version;
 
     public UserNode(Long userId) {
         this.userId = userId;
