@@ -65,6 +65,12 @@ type FriendRequest {
   receiver: User
 }
 
+type FriendshipStatus {
+  friend: Boolean
+  incomingRequest: ID
+  outgoingRequest: ID
+}
+
 type PostAttachment {
   id: ID
   url: String
@@ -173,6 +179,7 @@ type Query {
     sort: SortOrder = DESC
   ): [Conversation]
   getConversation(id: ID!): Conversation
+  getFriendshipStatus(friendId: ID!): FriendshipStatus
 }
 
 # Mutations
