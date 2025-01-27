@@ -17,7 +17,7 @@ import com.omarahmed42.socialmedia.model.FriendRequest;
 public interface FriendRequestRepository extends JpaRepository<FriendRequest, Long> {
     List<FriendRequest> findAll(Specification<FriendRequest> specification, Pageable pageable);
 
-    @Query("SELECT fr FROM FriendRequest fr WHERE ((fr.sender.id = :auth_user_id AND fr.receiver.id = :friend_id) OR (fr.sender.id = :friend_id AND fr.receiver.id = :auth_user_id) AND fr.requestStatus = :status)")
+    @Query("SELECT fr FROM FriendRequest fr WHERE (((fr.sender.id = :auth_user_id AND fr.receiver.id = :friend_id) OR (fr.sender.id = :friend_id AND fr.receiver.id = :auth_user_id)) AND fr.requestStatus = :status)")
     Optional<FriendRequest> findByFriendRequestStatus(@Param("auth_user_id") Long authenticatedUserId,
             @Param("friend_id") Long friendId,
             @Param("status") FriendRequestStatus status);
