@@ -25,8 +25,13 @@ public class FriendController {
     }
 
     @QueryMapping
-    public List<User> findFriends(@Argument Integer page, @Argument Integer pageSize) {
-        return friendService.findFriends(new PaginationInfo(page, pageSize));
+    public List<User> findMyFriends(@Argument Integer page, @Argument Integer pageSize) {
+        return friendService.findMyFriends(new PaginationInfo(page, pageSize));
+    }
+
+    @QueryMapping
+    public List<User> findFriends(@Argument Long userId, @Argument Integer page, @Argument Integer pageSize) {
+        return friendService.findFriends(userId, new PaginationInfo(page, pageSize));
     }
 
     @QueryMapping

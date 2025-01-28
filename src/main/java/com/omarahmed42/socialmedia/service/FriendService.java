@@ -18,8 +18,9 @@ public interface FriendService {
 
     void consume(ConsumerRecord<String, FriendRequestEvent> kafkaRecord);
 
-    List<User> findFriends(PaginationInfo paginationInfo);
+    List<User> findMyFriends(PaginationInfo paginationInfo);
+
+    List<User> findFriends(Long userId, PaginationInfo paginationInfo);
 
     Long countFriends(Long userId);
-
 }

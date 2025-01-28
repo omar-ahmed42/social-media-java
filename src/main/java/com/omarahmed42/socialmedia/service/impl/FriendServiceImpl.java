@@ -129,10 +129,24 @@ public class FriendServiceImpl implements FriendService {
     }
 
     @Override
-    public List<User> findFriends(PaginationInfo paginationInfo) {
+    public List<User> findMyFriends(PaginationInfo paginationInfo) {
         SecurityUtils.throwIfNotAuthenticated();
         Long userId = SecurityUtils.getAuthenticatedUserId();
 
+        Integer offset = (paginationInfo.getPage() - 1) * paginationInfo.getPageSize();
+        List<UserNode> friends = userNodeRepository.findFriends(userId, offset, paginationInfo.getPageSize());
+        if (friends == null || friends.isEmpty())
+            return new ArrayList<>();
+
+        List<Long> friendsIds = friends.stream()
+                .map(f -> f.getUserId())
+                .distinct()
+                .toList();
+        return userRepository.findAllById(friendsIds);
+    }
+
+    @Override
+    public List<User> findFriends(Long userId, PaginationInfo paginationInfo) {
         Integer offset = (paginationInfo.getPage() - 1) * paginationInfo.getPageSize();
         List<UserNode> friends = userNodeRepository.findFriends(userId, offset, paginationInfo.getPageSize());
         if (friends == null || friends.isEmpty())

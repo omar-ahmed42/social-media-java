@@ -140,7 +140,8 @@ enum SortOrder {
 type Query {
   findPost(id: ID!): Post
   findComment(id: ID!): Comment
-  findFriends(page: PositiveInt = 1, pageSize: PositiveInt = 15): [User]
+  findMyFriends(page: PositiveInt = 1, pageSize: PositiveInt = 15): [User]
+  findFriends(userId: ID!, page: PositiveInt = 1, pageSize: PositiveInt = 15): [User]
   fetchNewsfeed: [Post]
   findFriendRequests(
     isSender: Boolean = false
