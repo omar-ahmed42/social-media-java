@@ -1,6 +1,7 @@
 package com.omarahmed42.socialmedia.service.impl;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.omarahmed42.socialmedia.enums.AttachmentStatus;
@@ -52,6 +54,7 @@ public class CommentAttachmentServiceImpl implements CommentAttachmentService {
     private static final String EXTENSION_SEPARATOR = ".";
 
     private KafkaTemplate<String, Object> kafkaTemplate;
+    private final TransactionTemplate transactionTemplate;
 
     @Value("${storage.path}")
     private String storagePath;
@@ -59,12 +62,13 @@ public class CommentAttachmentServiceImpl implements CommentAttachmentService {
     public CommentAttachmentServiceImpl(CommentRepository commentRepository,
             KafkaTemplate<String, Object> kafkaTemplate,
             AttachmentRepository attachmentRepository, FileService fileService,
-            CommentAttachmentRepository commentAttachmentRepository) {
+            CommentAttachmentRepository commentAttachmentRepository, TransactionTemplate transactionTemplate) {
         this.commentRepository = commentRepository;
         this.kafkaTemplate = kafkaTemplate;
         this.attachmentRepository = attachmentRepository;
         this.commentAttachmentRepository = commentAttachmentRepository;
         this.fileService = fileService;
+        this.transactionTemplate = transactionTemplate;
 
         extensions.put(AttachmentType.IMAGE.toString(), IMAGE_EXTENSIONS);
         extensions.put(AttachmentType.VIDEO.toString(), VIDEO_EXTENSIONS);
@@ -181,5 +185,43 @@ public class CommentAttachmentServiceImpl implements CommentAttachmentService {
     private boolean isCommentOwner(Comment comment, Long userId) {
         Long commentOwnerId = comment.getUser().getId();
         return commentOwnerId.equals(userId);
+    }
+
+    @Override
+    public void removeCommentAttachment(Long commentId, Long attachmentId) {
+        SecurityUtils.throwIfNotAuthenticated();
+        Long authUserId = SecurityUtils.getAuthenticatedUserId();
+
+        Comment comment = commentRepository.findCommentById(commentId)
+                .orElseThrow(CommentNotFoundException::new);
+
+        throwIfNotCommentOwner(comment, authUserId);
+
+        Post post = comment.getPost();
+        if (post.getPostStatus() != PostStatus.PUBLISHED)
+            throw new InvalidInputException("Cannot update a comment on a non-published post");
+
+        String attachmentUrl = transactionTemplate.execute(tx -> {
+            Attachment attachment = attachmentRepository.findById(attachmentId)
+                    .orElseThrow(AttachmentNotFoundException::new);
+            attachment.setStatus(AttachmentStatus.DELETING);
+
+            final String url = attachment.getUrl();
+            CommentAttachmentId id = new CommentAttachmentId();
+            id.setComment(comment);
+            id.setAttachment(attachment);
+
+            commentAttachmentRepository.deleteById(id);
+            attachmentRepository.save(attachment);
+            return url;
+        });
+
+        try {
+            fileService.remove(Path.of(attachmentUrl));
+            transactionTemplate.executeWithoutResult(tx -> attachmentRepository.deleteById(attachmentId));
+        } catch (IOException e) {
+            log.error("An error occurred while removing file with url {} for comment id {} and attachment id {}",
+                    attachmentUrl, commentId.toString(), attachmentId.toString());
+        }
     }
 }

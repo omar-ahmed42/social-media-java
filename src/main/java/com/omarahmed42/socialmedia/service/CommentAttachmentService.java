@@ -9,4 +9,5 @@ public interface CommentAttachmentService {
     Long saveCommentAttachment(MultipartFile multipartFile, Long commentId);
 
     void consume(ConsumerRecord<String, Map<String, Object>> consumerRecord);
+    void removeCommentAttachment(Long commentId, Long attachmentId);
 }

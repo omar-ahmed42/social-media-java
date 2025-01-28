@@ -4,6 +4,7 @@ import java.net.URI;
 
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,6 +27,12 @@ public class CommentAttachmentController {
             @PathVariable("comment-id") Long commentId) {
         Long id = commentAttachmentService.saveCommentAttachment(multipartFile, commentId);
         return ResponseEntity.created(URI.create("/api/v1/comments/" + commentId + "/attachments/" + id)).build();
+    }
+
+    @DeleteMapping("/api/v1/comments/{comment-id}/attachments/{attachment-id}")
+    public ResponseEntity<Void> removeCommentAttachment(@PathVariable("comment-id") Long commentId, @PathVariable("attachment-id") Long attachmentId) {
+        commentAttachmentService.removeCommentAttachment(commentId, attachmentId);
+        return ResponseEntity.noContent().build();
     }
 
     @SchemaMapping(typeName = "CommentAttachment", field = "comment")
