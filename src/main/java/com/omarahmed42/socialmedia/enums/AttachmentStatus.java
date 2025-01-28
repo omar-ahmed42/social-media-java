@@ -3,7 +3,8 @@ package com.omarahmed42.socialmedia.enums;
 public enum AttachmentStatus {
     UPLOADING("UPLOADING", 1),
     COMPLETED("COMPLETED", 2),
-    FAILED("FAILED", 3);
+    FAILED("FAILED", 3),
+    DELETING("DELETING", 4);
 
     private final String text;
     private final int value;

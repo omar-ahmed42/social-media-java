@@ -4,6 +4,7 @@ import java.net.URI;
 
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,6 +27,12 @@ public class PostAttachmentController {
             @PathVariable("post-id") Long postId) {
         Long id = postAttachmentService.savePostAttachment(multipartFile, postId);
         return ResponseEntity.created(URI.create("/api/v1/posts/" + postId + "/attachments/" + id)).build();
+    }
+    
+    @DeleteMapping("/api/v1/posts/{post-id}/attachments/{attachment-id}")
+    public ResponseEntity<Void> removePostAttachment(@PathVariable("post-id") Long postId, @PathVariable("attachment-id") Long attachmentId) {
+        postAttachmentService.removePostAttachment(postId, attachmentId);
+        return ResponseEntity.noContent().build();
     }
 
     @SchemaMapping(typeName = "PostAttachment", field = "post")

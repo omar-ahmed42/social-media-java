@@ -1,6 +1,7 @@
 package com.omarahmed42.socialmedia.service.impl;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +16,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.omarahmed42.socialmedia.enums.AttachmentStatus;
@@ -54,18 +56,21 @@ public class PostAttachmentServiceImpl implements PostAttachmentService {
 
     private KafkaTemplate<String, Object> kafkaTemplate;
 
+    private final TransactionTemplate transactionTemplate;
+
     @Value("${storage.path}")
     private String storagePath;
 
     public PostAttachmentServiceImpl(PostRepository postRepository,
             KafkaTemplate<String, Object> kafkaTemplate,
             AttachmentRepository attachmentRepository, PostAttachmentRepository postAttachmentRepository,
-            FileService fileService) {
+            FileService fileService, TransactionTemplate transactionTemplate) {
         this.postRepository = postRepository;
         this.kafkaTemplate = kafkaTemplate;
         this.attachmentRepository = attachmentRepository;
         this.postAttachmentRepository = postAttachmentRepository;
         this.fileService = fileService;
+        this.transactionTemplate = transactionTemplate;
 
         extensions.put(AttachmentType.IMAGE.toString(), IMAGE_EXTENSIONS);
         extensions.put(AttachmentType.VIDEO.toString(), VIDEO_EXTENSIONS);
@@ -156,7 +161,6 @@ public class PostAttachmentServiceImpl implements PostAttachmentService {
         Long attachmentId = (Long) value.get("attachmentId");
         AttachmentStatus status = AttachmentStatus.valueOf((String) value.get("status"));
 
-
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(AttachmentNotFoundException::new);
         attachment.setStatus(status);
@@ -185,4 +189,40 @@ public class PostAttachmentServiceImpl implements PostAttachmentService {
     public List<PostAttachment> findPostAttachmentsByPost(Post post) {
         return postAttachmentRepository.queryAllByPostAttachmentIdPost(post);
     }
+
+    @Override
+    public void removePostAttachment(Long postId, Long attachmentId) {
+        SecurityUtils.throwIfNotAuthenticated();
+        Long authUserId = SecurityUtils.getAuthenticatedUserId();
+
+        Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        throwIfNotPostOwner(post, authUserId);
+
+        if (post.getPostStatus() == PostStatus.ARCHIVED)
+            throw new InvalidInputException("Cannot update an archived post");
+
+        String attachmentUrl = transactionTemplate.execute(tx -> {
+            Attachment attachment = attachmentRepository.findById(attachmentId)
+                    .orElseThrow(AttachmentNotFoundException::new);
+            attachment.setStatus(AttachmentStatus.DELETING);
+
+            final String url = attachment.getUrl();
+            PostAttachmentId id = new PostAttachmentId();
+            id.setPost(post);
+            id.setAttachment(attachment);
+
+            postAttachmentRepository.deleteById(id);
+            attachmentRepository.save(attachment);
+            return url;
+        });
+
+        try {
+            fileService.remove(Path.of(attachmentUrl));
+            transactionTemplate.executeWithoutResult(tx -> attachmentRepository.deleteById(attachmentId));
+        } catch (IOException e) {
+            log.error("An error occurred while removing file with url {} for post id {} and attachment id {}",
+                    attachmentUrl, postId.toString(), attachmentId.toString());
+        }
+    }
+
 }

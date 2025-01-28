@@ -7,4 +7,5 @@ import java.nio.file.Path;
 
 public interface FileService {
     public long copy(InputStream in, Path target, CopyOption... options) throws IOException;
+    public boolean remove(Path path) throws IOException;
 }

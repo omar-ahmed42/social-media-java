@@ -18,4 +18,8 @@ public class FileServiceImpl implements FileService {
         FileUtils.forceMkdir(target.getParent().toFile());
         return Files.copy(in, target, options);
     }
+    
+    public boolean remove(Path path) throws IOException {
+        return Files.deleteIfExists(path);
+    }
 }

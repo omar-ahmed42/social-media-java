@@ -15,4 +15,6 @@ public interface PostAttachmentService {
     void consume(ConsumerRecord<String, Map<String, Object>> consumerRecord);
 
     List<PostAttachment> findPostAttachmentsByPost(Post post);
+
+    void removePostAttachment(Long postId, Long attachmentId);
 }
