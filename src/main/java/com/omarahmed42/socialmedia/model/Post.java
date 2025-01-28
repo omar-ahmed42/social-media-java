@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.omarahmed42.socialmedia.enums.PostStatus;
 import com.omarahmed42.socialmedia.generator.SnowflakeUIDGenerator;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -46,7 +47,7 @@ public class Post extends Auditable {
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 
-    @OneToMany(mappedBy = "postAttachmentId.post")
+    @OneToMany(mappedBy = "postAttachmentId.post", cascade = CascadeType.REMOVE)
     @JsonIgnore
     private List<PostAttachment> postAttachments = new ArrayList<>();
 

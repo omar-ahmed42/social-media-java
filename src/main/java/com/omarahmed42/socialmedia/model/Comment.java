@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.omarahmed42.socialmedia.enums.CommentStatus;
 import com.omarahmed42.socialmedia.generator.SnowflakeUIDGenerator;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -45,6 +48,7 @@ public class Comment extends Auditable {
     private CommentStatus commentStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "post_id", referencedColumnName = "id", nullable = false)
     private Post post;
 
@@ -52,7 +56,7 @@ public class Comment extends Auditable {
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
-    @OneToMany(mappedBy = "commentAttachmentId.comment")
+    @OneToMany(mappedBy = "commentAttachmentId.comment", cascade = CascadeType.REMOVE)
     @JsonIgnore
     private List<CommentAttachment> commentAttachments = new ArrayList<>();
 }
