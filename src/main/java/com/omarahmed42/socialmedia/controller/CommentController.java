@@ -66,7 +66,7 @@ public class CommentController {
         List<CommentAttachment> attachments = commentService.getCommentAttachmentsBy(comment);
         return attachments.stream().map(CommentAttachment::getCommentAttachmentId)
                 .map(CommentAttachmentId::getAttachment)
-                .map(attachment -> new AttachmentDto(attachment.getId(), attachment.getUrl())).toList();
+                .map(attachment -> new AttachmentDto(attachment.getId(), attachment.getUrl(), attachment.getAttachmentType())).toList();
     }
 
     @SchemaMapping(typeName = "Comment", field = "reactionStatistics")

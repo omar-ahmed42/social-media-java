@@ -74,12 +74,14 @@ type FriendshipStatus {
 type PostAttachment {
   id: ID
   url: String
+  type: String
   post: Post
 }
 
 type CommentAttachment {
   id: ID
   url: String
+  type: String
   comment: Comment
 }
 
@@ -104,6 +106,7 @@ type Message {
 type MessageAttachment {
   id: ID
   url: String
+  type: String
   message: Message
 }
 
@@ -122,6 +125,7 @@ input UserUpdateInput {
 type Attachment {
   id: ID
   url: String
+  type: String
 }
 
 input SaveCommentInput {

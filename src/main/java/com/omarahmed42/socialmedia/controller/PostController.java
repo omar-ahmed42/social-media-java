@@ -74,7 +74,7 @@ public class PostController {
     @SchemaMapping(typeName = "Post", field = "postAttachments")
     public List<AttachmentDto> postAttachments(Post post) {
         List<PostAttachment> postAttachments = postAttachmentService.findPostAttachmentsByPost(post);
-        return postAttachments.stream().map(PostAttachment::getPostAttachmentId).map(PostAttachmentId::getAttachment).map(attachment -> new AttachmentDto(attachment.getId(), attachment.getUrl())).toList();
+        return postAttachments.stream().map(PostAttachment::getPostAttachmentId).map(PostAttachmentId::getAttachment).map(attachment -> new AttachmentDto(attachment.getId(), attachment.getUrl(), attachment.getAttachmentType())).toList();
     }
 
     @SchemaMapping(typeName = "Post", field = "reactionStatistics")

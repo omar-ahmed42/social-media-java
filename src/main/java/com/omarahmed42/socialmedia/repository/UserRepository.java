@@ -23,8 +23,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(value = """
         SELECT new com.omarahmed42.socialmedia.dto.projection.UserPersonalInfoDto(u.id, u.firstName, u.lastName, u.bio, u.username, u.dateOfBirth,
-         u.email, u.createdAt, new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(avatar.id, avatar.url), 
-         new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(coverPicture.id, coverPicture.url)
+         u.email, u.createdAt, new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(avatar.id, avatar.url, avatar.attachmentType), 
+         new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(coverPicture.id, coverPicture.url, coverPicture.attachmentType)
         ) FROM User u 
         LEFT JOIN Attachment avatar
              ON avatar.id = u.avatar.id 
@@ -37,8 +37,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = """
         SELECT new com.omarahmed42.socialmedia.dto.projection.UserPublicInfoDto(u.id, u.firstName, u.lastName, u.bio, u.username,
         u.dateOfBirth, u.createdAt, 
-        new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(avatar.id, avatar.url),
-        new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(coverPicture.id, coverPicture.url)) 
+        new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(avatar.id, avatar.url, avatar.attachmentType),
+        new com.omarahmed42.socialmedia.dto.projection.AttachmentDto(coverPicture.id, coverPicture.url, coverPicture.attachmentType)) 
         FROM User u
         LEFT JOIN Attachment avatar
              ON avatar.id = u.avatar.id
