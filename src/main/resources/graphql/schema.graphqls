@@ -146,6 +146,7 @@ type Query {
   findComment(id: ID!): Comment
   findMyFriends(page: PositiveInt = 1, pageSize: PositiveInt = 15): [User]
   findFriends(userId: ID!, page: PositiveInt = 1, pageSize: PositiveInt = 15): [User]
+  findRecommendedConnections(page: PositiveInt = 1, pageSize: PositiveInt = 15): [User]
   fetchNewsfeed: [Post]
   findFriendRequests(
     isSender: Boolean = false

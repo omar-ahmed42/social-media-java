@@ -23,4 +23,6 @@ public interface FriendService {
     List<User> findFriends(Long userId, PaginationInfo paginationInfo);
 
     Long countFriends(Long userId);
+
+    List<User> findRecommendedConnections(PaginationInfo paginationInfo);
 }

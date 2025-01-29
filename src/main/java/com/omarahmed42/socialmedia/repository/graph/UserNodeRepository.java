@@ -60,4 +60,17 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, Long> {
                         MATCH (user: User{userId: $user_id})-[friend_with:FRIEND_WITH]-(friend: User) RETURN count(friend_with);
                                     """)
         long countFriends(@Param("user_id") Long userId);
+
+        @Query("""
+                        MATCH (user:User {userId: $userId})-[:FRIEND_WITH]->(friend:User)-[:FRIEND_WITH]->(fof:User)
+                            WHERE NOT (user)-[:FRIEND_WITH]->(fof) AND user <> fof
+                            AND NOT (user)-[:BLOCKS]->(fof)
+                            AND NOT (fof)-[:BLOCKS]->(user)
+                            WITH fof, COUNT(friend) AS commonFriends
+                            RETURN fof
+                            ORDER BY commonFriends DESC
+                            SKIP $offset
+                            LIMIT $limit
+                            """)
+        List<UserNode> findRecommendedConnections(@Param("userId") Long userId, @Param("offset") Integer offset, @Param("limit") Integer limit);
 }

@@ -178,4 +178,23 @@ public class FriendServiceImpl implements FriendService {
         SecurityUtils.throwIfNotAuthenticated();
         return userNodeRepository.countFriends(userId);
     }
+
+    @Override
+    public List<User> findRecommendedConnections(PaginationInfo paginationInfo) {
+        SecurityUtils.throwIfNotAuthenticated();
+        Long userId = SecurityUtils.getAuthenticatedUserId();
+
+        Integer offset = (paginationInfo.getPage() - 1) * paginationInfo.getPageSize();
+        List<UserNode> connections = userNodeRepository.findRecommendedConnections(userId, offset,
+                paginationInfo.getPageSize());
+        if (connections == null || connections.isEmpty())
+            return new ArrayList<>();
+
+        List<Long> connectionsIds = connections.stream()
+                .map(f -> f.getUserId())
+                .distinct()
+                .toList();
+        return userRepository.findAllById(connectionsIds);
+    }
+
 }

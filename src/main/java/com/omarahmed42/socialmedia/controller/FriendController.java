@@ -43,4 +43,9 @@ public class FriendController {
     public Long countFriends(@Argument Long userId) {
         return friendService.countFriends(userId);
     }
+
+    @QueryMapping
+    public List<User> findRecommendedConnections(@Argument Integer page, @Argument Integer pageSize) {
+        return friendService.findRecommendedConnections(new PaginationInfo(page, pageSize));
+    }
 }
