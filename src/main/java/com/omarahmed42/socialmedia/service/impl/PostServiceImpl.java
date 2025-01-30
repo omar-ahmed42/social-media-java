@@ -110,7 +110,7 @@ public class PostServiceImpl implements PostService {
         throwIfNotPostOwner(post, userId);
         throwIfNotDraftPost(post.getPostStatus());
 
-        if (post.getContent().equals(postInputProjection.getContent())) {
+        if (Objects.equals(post.getContent(), postInputProjection.getContent())) {
             return post;
         }
 
