@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.omarahmed42.socialmedia.enums.PostStatus;
@@ -50,6 +52,11 @@ public class Post extends Auditable {
     @OneToMany(mappedBy = "postAttachmentId.post", cascade = CascadeType.REMOVE)
     @JsonIgnore
     private List<PostAttachment> postAttachments = new ArrayList<>();
+
+    @ManyToOne
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "parent_id")
+    private Post parent;
 
     public Post(String content, PostStatus postStatus, User user) {
         this.content = content;

@@ -11,7 +11,7 @@ import com.omarahmed42.socialmedia.projection.PostInputProjection;
 public interface PostService {
     Post addPost(PostInputProjection postInputProjection);
 
-    Integer deletePost(Long postId);
+    Long deletePost(Long postId);
 
     Post findPost(Long postId);
 

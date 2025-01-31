@@ -3,7 +3,8 @@ package com.omarahmed42.socialmedia.enums;
 public enum PostStatus {
     DRAFT("DRAFT", 1),
     PUBLISHED("PUBLISHED", 2),
-    ARCHIVED("ARCHIVED", 3);
+    ARCHIVED("ARCHIVED", 3),
+    TOMBSTONE("TOMBSTONE", 4);
 
     private final String text;
     private final int value;

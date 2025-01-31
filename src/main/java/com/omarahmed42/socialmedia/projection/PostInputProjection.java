@@ -9,4 +9,6 @@ public interface PostInputProjection {
     String getContent();
 
     String getPostStatus();
+
+    Long getParentId();
 }

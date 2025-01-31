@@ -1,7 +1,11 @@
 package com.omarahmed42.socialmedia.service.impl;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.Cache;
@@ -9,11 +13,13 @@ import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.omarahmed42.socialmedia.dto.PaginationInfo;
+import com.omarahmed42.socialmedia.dto.event.AttachmentDeletionEvent;
 import com.omarahmed42.socialmedia.enums.PostStatus;
 import com.omarahmed42.socialmedia.exception.ForbiddenPostAccessException;
 import com.omarahmed42.socialmedia.exception.InvalidInputException;
@@ -27,6 +33,7 @@ import com.omarahmed42.socialmedia.projection.PostInputProjection;
 import com.omarahmed42.socialmedia.repository.PostAttachmentRepository;
 import com.omarahmed42.socialmedia.repository.PostRepository;
 import com.omarahmed42.socialmedia.repository.UserRepository;
+import com.omarahmed42.socialmedia.service.FileService;
 import com.omarahmed42.socialmedia.service.FriendService;
 import com.omarahmed42.socialmedia.service.PostService;
 import com.omarahmed42.socialmedia.util.SecurityUtils;
@@ -45,6 +52,7 @@ public class PostServiceImpl implements PostService {
     private final FriendService friendService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final CacheManager cacheManager;
+    private final FileService fileService;
 
     @Override
     public Post addPost(PostInputProjection postInputProjection) {
@@ -63,6 +71,8 @@ public class PostServiceImpl implements PostService {
             case PUBLISHED:
                 post = publishPost(authenticatedUserId, postInputProjection);
                 break;
+            default:
+                throw new InvalidInputException("Invalid post status");
         }
 
         return post;
@@ -100,12 +110,14 @@ public class PostServiceImpl implements PostService {
             Post post = new Post(postInputProjection.getContent(),
                     PostStatus.DRAFT,
                     userRepository.getReferenceById(userId));
+            validateAndSetParentPost(userId, postInputProjection, post);
             post = postRepository.save(post);
             return post;
         }
 
         Post post = postRepository.findById(postInputProjection.getId())
                 .orElseThrow(PostNotFoundException::new);
+        validateAndSetParentPost(userId, postInputProjection, post);
 
         throwIfNotPostOwner(post, userId);
         throwIfNotDraftPost(post.getPostStatus());
@@ -117,6 +129,30 @@ public class PostServiceImpl implements PostService {
         post.setContent(postInputProjection.getContent());
         post = postRepository.save(post);
         return post;
+    }
+
+    private void validateAndSetParentPost(Long userId, PostInputProjection postInputProjection, Post post) {
+        Optional.ofNullable(postInputProjection.getParentId()).ifPresent(parentId -> {
+            Post sharedPost = postRepository.findById(postInputProjection.getParentId())
+                    .orElseThrow(PostNotFoundException::new);
+            validateParentPost(userId, sharedPost);
+            post.setParent(sharedPost);
+        });
+    }
+
+    private void validateParentPost(Long userId, Post sharedPost) {
+        if (sharedPost.getPostStatus() != PostStatus.PUBLISHED || !canView(sharedPost, userId)) {
+            log.warn("Illegal access to post {} with status {} by user id {}", sharedPost.getId(),
+                    sharedPost.getPostStatus(), userId);
+            // Throw not found for security purposes
+            throw new PostNotFoundException("Post not found or inaccessible");
+        }
+    }
+
+    private boolean canView(Post post, Long userId) {
+        Long ownerId = post.getUser().getId();
+        // Only friends and post owners can view posts
+        return isPostOwner(post, userId) || friendService.isFriend(userId, ownerId);
     }
 
     private void throwIfNotPostOwner(Post post, Long userId) {
@@ -140,6 +176,7 @@ public class PostServiceImpl implements PostService {
             Post post = new Post(postInputProjection.getContent(),
                     PostStatus.PUBLISHED,
                     userRepository.getReferenceById(userId));
+            validateAndSetParentPost(userId, postInputProjection, post);
             post = postRepository.save(post);
             kafkaTemplate.send("newsfeed", new Newsfeed(userId, post.getId()));
             return post;
@@ -155,10 +192,14 @@ public class PostServiceImpl implements PostService {
         if (isEqualContent(post, postInputProjection) && oldPostStatus == PostStatus.PUBLISHED)
             return post;
 
+        boolean wasDraft = oldPostStatus == PostStatus.DRAFT;
+        if (wasDraft)
+            validateAndSetParentPost(userId, postInputProjection, post);
+
         post.setContent(postInputProjection.getContent());
         post.setPostStatus(PostStatus.PUBLISHED);
         post = postRepository.save(post);
-        if (oldPostStatus == PostStatus.DRAFT)
+        if (wasDraft)
             kafkaTemplate.send("newsfeed", new Newsfeed(userId, post.getId()));
 
         cache(post);
@@ -191,14 +232,47 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public Integer deletePost(Long postId) {
+    public Long deletePost(Long postId) {
         Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
-        int recordCount = postRepository.deleteByIdAndUserId(postId, authenticatedUserId);
-        if (recordCount == 1) {
-            evictCache(postId);
-            kafkaTemplate.send("newsfeed-post-eviction", new Newsfeed(authenticatedUserId, postId));
+        Post post = postRepository.findById(postId)
+                .orElseThrow(PostNotFoundException::new);
+
+        if (!isPostOwner(post, authenticatedUserId)) {
+            log.warn("Illegal access to post {} by user id {}", post.getId(), authenticatedUserId);
+            // Throw not found for security purposes
+            throw new PostNotFoundException("Post not found or inaccessible");
         }
-        return recordCount;
+        // Check if the post has been shared by other posts
+        boolean isShared = postRepository.existsByParentId(postId);
+        List<PostAttachment> postAttachments = postAttachmentsRepository.findAllByPostAttachmentIdPost(post);
+
+        // Extract unique attachment URLs
+        List<String> attachmentUrls = postAttachments.stream()
+                .map(a -> a.getPostAttachmentId().getAttachment().getUrl())
+                .distinct()
+                .toList();
+
+        if (attachmentUrls != null && !attachmentUrls.isEmpty()) {
+            // Send attachment deletion event to Kafka
+            kafkaTemplate.send("attachment-deletion", new AttachmentDeletionEvent(attachmentUrls));
+        }
+
+        if (isShared) {
+            // Tombstone the post
+            log.info("Tombstoning post {} by user {}", postId, authenticatedUserId);
+            post.setPostStatus(PostStatus.TOMBSTONE);
+            post.setContent(null); // Set content to null to save space
+            post.getPostAttachments().clear();
+            postRepository.save(post);
+        } else {
+            // Hard delete the post
+            log.info("Hard deleting post {} by user {}", postId, authenticatedUserId);
+            postRepository.delete(post);
+        }
+
+        evictCache(postId);
+        kafkaTemplate.send("newsfeed-post-eviction", new Newsfeed(authenticatedUserId, postId));
+        return postId;
     }
 
     private void evictCache(Long postId) {
@@ -208,6 +282,18 @@ public class PostServiceImpl implements PostService {
             return;
         }
         postsCache.evict(postId);
+    }
+
+    @KafkaListener(topics = "attachment-deletion")
+    public void handleAttachmentDeletion(AttachmentDeletionEvent event) {
+        List<String> attachmentUrls = event.getAttachmentUrls();
+        attachmentUrls.forEach(url -> {
+            try {
+                fileService.remove(Path.of(url));
+            } catch (IOException e) {
+                log.error("Failed to delete file: {}", url, e);
+            }
+        });
     }
 
     @Override
@@ -226,7 +312,7 @@ public class PostServiceImpl implements PostService {
 
         Long postOwnerId = post.getUser().getId();
         final boolean isFriend = friendService.isFriend(authenticatedUserId, postOwnerId);
-        if (post.getPostStatus() == PostStatus.PUBLISHED && isFriend) {
+        if ((post.getPostStatus() == PostStatus.PUBLISHED || post.getPostStatus() == PostStatus.TOMBSTONE) && isFriend) {
             return post;
         }
 
@@ -256,36 +342,41 @@ public class PostServiceImpl implements PostService {
         Long userId = user.getId();
         if (userId.equals(authenticatedUserId))
             return postRepository.findAllByUser(user);
-            
-            final boolean isFriend = friendService.isFriend(authenticatedUserId, userId);
-            if (!isFriend)
-            throw new ForbiddenPostAccessException("Forbidden: Cannot access posts for user with id " + userId);
-            
-            List<Post> posts = postRepository.findAllByUser(user);
-            if (posts == null || posts.isEmpty())
-                return new ArrayList<>();
-            
-            return posts.stream()
-            .filter(m -> m.getPostStatus() == PostStatus.PUBLISHED)
-            .toList();
-        }
-        
-        @Override
-        public List<Post> findPostsByUserId(Long userId, PaginationInfo pageInfo, Long lastSeenPostId) {
-            if (userId == null) throw new IllegalArgumentException("User id cannot be empty");
-            Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
-            if (userId.equals(authenticatedUserId)) {
-                if (lastSeenPostId != null) return postRepository.findAllByUserIdAndLastSeenPostId(userId, lastSeenPostId, pageInfo.getPageSize());
-                return postRepository.findAllByUserId(userId, PageRequest.of(pageInfo.getPage() - 1, pageInfo.getPageSize(), Sort.by(Direction.DESC, "id")));
-            }
 
-            final boolean isFriend = friendService.isFriend(authenticatedUserId, userId);
-            if (!isFriend)
-                throw new ForbiddenPostAccessException("Forbidden: Cannot access posts for user with id " + userId);
-            
-            
-            if (lastSeenPostId != null) return postRepository.findAllByUserIdAndLastSeenPostIdAndPostStatus(userId, lastSeenPostId, PostStatus.PUBLISHED, pageInfo.getPageSize());
-            return postRepository.findAllByUserIdAndPostStatus(userId, PostStatus.PUBLISHED, PageRequest.of(pageInfo.getPage() - 1, pageInfo.getPageSize(), Sort.by(Sort.Direction.DESC, "id")));
+        final boolean isFriend = friendService.isFriend(authenticatedUserId, userId);
+        if (!isFriend)
+            throw new ForbiddenPostAccessException("Forbidden: Cannot access posts for user with id " + userId);
+
+        List<Post> posts = postRepository.findAllByUser(user);
+        if (posts == null || posts.isEmpty())
+            return new ArrayList<>();
+
+        return posts.stream()
+                .filter(m -> m.getPostStatus() == PostStatus.PUBLISHED)
+                .toList();
+    }
+
+    @Override
+    public List<Post> findPostsByUserId(Long userId, PaginationInfo pageInfo, Long lastSeenPostId) {
+        if (userId == null)
+            throw new IllegalArgumentException("User id cannot be empty");
+        Long authenticatedUserId = SecurityUtils.getAuthenticatedUserId();
+        if (userId.equals(authenticatedUserId)) {
+            if (lastSeenPostId != null)
+                return postRepository.findAllByUserIdAndLastSeenPostId(userId, lastSeenPostId, pageInfo.getPageSize());
+            return postRepository.findAllByUserId(userId,
+                    PageRequest.of(pageInfo.getPage() - 1, pageInfo.getPageSize(), Sort.by(Direction.DESC, "id")));
+        }
+
+        final boolean isFriend = friendService.isFriend(authenticatedUserId, userId);
+        if (!isFriend)
+            throw new ForbiddenPostAccessException("Forbidden: Cannot access posts for user with id " + userId);
+
+        if (lastSeenPostId != null)
+            return postRepository.findAllByUserIdAndLastSeenPostIdAndPostStatus(userId, lastSeenPostId,
+                    PostStatus.PUBLISHED, pageInfo.getPageSize());
+        return postRepository.findAllByUserIdAndPostStatus(userId, PostStatus.PUBLISHED,
+                PageRequest.of(pageInfo.getPage() - 1, pageInfo.getPageSize(), Sort.by(Sort.Direction.DESC, "id")));
     }
 
 }

@@ -52,7 +52,7 @@ public class PostController {
     }
 
     @MutationMapping
-    public Integer deletePost(@Argument Long id) {
+    public Long deletePost(@Argument Long id) {
         return postService.deletePost(id);
     }
 
@@ -80,5 +80,10 @@ public class PostController {
     @SchemaMapping(typeName = "Post", field = "reactionStatistics")
     public ReactionStatistics reactionStatistics(Post post) {
         return (ReactionStatistics) statisticsService.getStatistics(post.getId().toString());
+    }
+
+    @SchemaMapping(typeName = "Post", field = "parent")
+    public Post parent(Post post) {
+        return post.getParent() == null ? null : postService.findPost(post.getParent().getId());
     }
 }

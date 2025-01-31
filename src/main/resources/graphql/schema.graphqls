@@ -33,6 +33,7 @@ type Post {
   postStatus: String
   user: User
   reactionStatistics: ReactionStatistics
+  parent: Post
 }
 
 type Comment {
@@ -114,6 +115,7 @@ input SavePostInput {
   id: ID
   content: String
   postStatus: String
+  parentId: ID
 }
 
 input UserUpdateInput {
@@ -204,7 +206,7 @@ type Mutation {
   unblockUser(userToBeUnBlockedId: ID!): Boolean
 
   savePost(postInput: SavePostInput): Post
-  deletePost(id: ID!): Int
+  deletePost(id: ID!): Long
 
   saveComment(commentInput: SaveCommentInput): Comment
   deleteComment(id: ID!): Boolean
