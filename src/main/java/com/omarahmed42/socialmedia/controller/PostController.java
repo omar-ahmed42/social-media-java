@@ -20,6 +20,7 @@ import com.omarahmed42.socialmedia.model.User;
 import com.omarahmed42.socialmedia.projection.PostInputProjection;
 import com.omarahmed42.socialmedia.service.PostAttachmentService;
 import com.omarahmed42.socialmedia.service.PostService;
+import com.omarahmed42.socialmedia.service.SharingService;
 import com.omarahmed42.socialmedia.service.StatisticsService;
 import com.omarahmed42.socialmedia.service.UserService;
 
@@ -32,13 +33,17 @@ public class PostController {
     private final PostAttachmentService postAttachmentService;
     private final UserService userService;
     private final StatisticsService statisticsService;
+    private final SharingService postSharingService;
 
     public PostController(PostService postService, UserService userService,
-            @Qualifier("postReactionsStatisticsService") StatisticsService statisticsService, PostAttachmentService postAttachmentService) {
+            @Qualifier("postReactionsStatisticsService") StatisticsService statisticsService,
+            PostAttachmentService postAttachmentService,
+            @Qualifier("postSharingService") SharingService postSharingService) {
         this.postService = postService;
         this.userService = userService;
         this.statisticsService = statisticsService;
         this.postAttachmentService = postAttachmentService;
+        this.postSharingService = postSharingService;
     }
 
     @QueryMapping
@@ -57,7 +62,8 @@ public class PostController {
     }
 
     @QueryMapping
-    public List<Post> findPostsByUserId(@Argument Long userId, @Argument Integer page, @Argument Integer pageSize, @Argument Long lastSeenPostId) {
+    public List<Post> findPostsByUserId(@Argument Long userId, @Argument Integer page, @Argument Integer pageSize,
+            @Argument Long lastSeenPostId) {
         return postService.findPostsByUserId(userId, new PaginationInfo(page, pageSize), lastSeenPostId);
     }
 
@@ -74,7 +80,10 @@ public class PostController {
     @SchemaMapping(typeName = "Post", field = "postAttachments")
     public List<AttachmentDto> postAttachments(Post post) {
         List<PostAttachment> postAttachments = postAttachmentService.findPostAttachmentsByPost(post);
-        return postAttachments.stream().map(PostAttachment::getPostAttachmentId).map(PostAttachmentId::getAttachment).map(attachment -> new AttachmentDto(attachment.getId(), attachment.getUrl(), attachment.getAttachmentType())).toList();
+        return postAttachments.stream().map(PostAttachment::getPostAttachmentId).map(PostAttachmentId::getAttachment)
+                .map(attachment -> new AttachmentDto(attachment.getId(), attachment.getUrl(),
+                        attachment.getAttachmentType()))
+                .toList();
     }
 
     @SchemaMapping(typeName = "Post", field = "reactionStatistics")
@@ -85,5 +94,10 @@ public class PostController {
     @SchemaMapping(typeName = "Post", field = "parent")
     public Post parent(Post post) {
         return post.getParent() == null ? null : postService.findPost(post.getParent().getId());
+    }
+
+    @SchemaMapping(typeName = "Post", field = "sharesCount")
+    public Integer sharesCount(Post post) {
+        return postSharingService.getSharesCount(post.getId());
     }
 }

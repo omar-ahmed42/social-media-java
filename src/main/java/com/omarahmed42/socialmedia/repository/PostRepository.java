@@ -45,4 +45,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	List<Post> findAllByUserId(Long userId, Pageable page);
 
     boolean existsByParentId(Long postId);
+
+    Integer countByParentId(Long postId);
+
+    Integer countByParentIdAndPostStatusNot(Long postId, PostStatus postStatus);
 }
